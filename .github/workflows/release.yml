@@ -32,6 +32,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Install ImageMagick
+        continue-on-error: true
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
+
+      - name: Generate app icon
+        continue-on-error: true
+        run: |
+          mkdir -p wpf/Assets
+          convert -background none icons/icon.svg \
+            -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico
+
       - name: Publish WPF (win-x64, self-contained)
         run: |
           dotnet publish wpf/InkBoard.Wpf.csproj -c Release -r win-x64 \
@@ -45,8 +56,8 @@ jobs:
       - name: Package assets
         run: |
           mkdir -p rel
-          cp pub-wpf/InkBoard.exe "rel/InkBoard-WPF-${VERSION}.exe"
-          cp dist/inkboard-standalone.html "rel/InkBoard-Web-${VERSION}.html"
+          cp pub-wpf/SchoolToolsBoard.exe "rel/SchoolToolsBoard-WPF-${VERSION}.exe"
+          cp dist/stb-standalone.html "rel/SchoolToolsBoard-Web-${VERSION}.html"
           curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o "rel/LICENSE.txt" || cp LICENSE "rel/LICENSE.txt"
           ls -lh rel
 
@@ -55,6 +66,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "v${VERSION}" rel/* \
-            --title "墨板 InkBoard v${VERSION}" \
+            --title "School Tools Board（STB）课堂白板 v${VERSION}" \
             --notes-file RELEASE_NOTES.md \
             --target "$GITHUB_SHA"
