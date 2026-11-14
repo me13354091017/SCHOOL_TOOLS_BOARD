@@ -1,7 +1,7 @@
 {
-  "name": "墨板 InkBoard · 课堂白板",
-  "short_name": "墨板",
-  "description": "面向课堂触控一体机的开源白板：时间笔锋、图形识别、多页板书、课堂工具",
+  "name": "School Tools Board · 课堂白板",
+  "short_name": "STB",
+  "description": "SCHOOL_TOOLS 旗下的课堂白板：时间笔锋、图形识别、多页板书、课堂工具，面向触控一体机",
   "lang": "zh-CN",
   "start_url": "./index.html",
   "scope": "./",
@@ -18,8 +18,7 @@
     {
       "src": "icons/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "type": "image/svg+xml"
     }
   ]
 }

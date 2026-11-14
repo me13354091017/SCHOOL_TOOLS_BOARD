@@ -2,7 +2,7 @@
 <Window x:Class="InkBoard.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="墨板 InkBoard · 课堂白板"
+        Title="School Tools Board · 课堂白板"
         Height="900" Width="1440"
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized"
