@@ -1,8 +1,5 @@
 name: Rebrand to STB
 
-# 一次性迁移：把「墨板 InkBoard」统一为 School Tools Board（STB）。
-# 结果推到 rebrand/stb 分支，再由 PR 合入 main。
-
 on:
   push:
     paths:
@@ -35,22 +32,25 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Apply rebrand script
-        run: python3 tools/rebrand-stb.py
+        run: |
+          set -o pipefail
+          python3 tools/rebrand-stb.py 2>&1 | tee /tmp/log.txt
 
       - name: Install ImageMagick
         continue-on-error: true
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick 2>&1 | tail -3 | tee -a /tmp/log.txt
 
       - name: Generate app icon
         continue-on-error: true
         run: |
           mkdir -p wpf/Assets
-          convert -background none icons/icon.svg -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico
+          convert -background none icons/icon.svg -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico 2>&1 | tee -a /tmp/log.txt
 
       - name: Sanity build (web + wpf)
+        continue-on-error: true
         run: |
-          node build.mjs
-          dotnet build wpf/InkBoard.Wpf.csproj -c Release -p:EnableWindowsTargeting=true
+          node build.mjs 2>&1 | tee -a /tmp/log.txt
+          dotnet build wpf/InkBoard.Wpf.csproj -c Release -p:EnableWindowsTargeting=true 2>&1 | tail -20 | tee -a /tmp/log.txt
 
       - name: Commit and push to rebrand branch
         env:
@@ -61,8 +61,18 @@ jobs:
           git checkout -B "$BRANCH"
           git add -A
           if git diff --cached --quiet; then
-            echo "没有需要提交的改动"
+            echo "没有需要提交的改动" | tee -a /tmp/log.txt
             exit 0
           fi
-          git commit -m "chore(stb): 品牌统一为 School Tools Board（STB）课堂白板"
-          git push --force origin "HEAD:refs/heads/$BRANCH"
+          git commit -m "chore(stb): 品牌统一为 School Tools Board（STB）课堂白板" 2>&1 | tee -a /tmp/log.txt
+          git push --force origin "HEAD:refs/heads/$BRANCH" 2>&1 | tee -a /tmp/log.txt
+
+      - name: Publish log to run summary
+        if: always()
+        run: |
+          echo '<details><summary>rebrand log</summary>' >> $GITHUB_STEP_SUMMARY
+          echo '' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -c 5000 /tmp/log.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo '(no log)' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo '</details>' >> $GITHUB_STEP_SUMMARY
