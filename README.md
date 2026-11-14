@@ -1,17 +1,25 @@
 # 墨板 InkBoard
 
-面向**课堂触控一体机**的开源白板软件。纯原生 Web（Canvas 2D）实现，**零运行时依赖、单文件可离线、不装环境**，打开浏览器就能上课。
+面向**课堂触控一体机**的开源白板软件，同一套设计出两个版本：**Web 版**（零依赖、打开浏览器就能上课）与 **WPF 桌面版**（Windows 原生、绿色免安装）。
 
-> 血缘：核心笔迹工程思路源于作者上一个项目 [SCHOOL_TOOLS_PDF](https://github.com/me13354091017/SCHOOL_TOOLS_PDF)（WPF / .NET 10 / InkCanvasForPDF 派生的 PDF 墨迹白板）。本项目把那套「**时间笔锋 + 手绘转标准图形 + 函数/坐标系图形**」的墨迹经验搬到浏览器，几何算法全部自研重写，以适配一体机的手写笔与触摸。
+> 血缘：核心笔迹工程思路源于作者上一个项目 [SCHOOL_TOOLS_PDF](https://github.com/me13354091017/SCHOOL_TOOLS_PDF)（WPF / .NET 10 / InkCanvasForPDF 衍生的 PDF 墨迹白板）。本项目把那套「**时间笔锋 + 手绘转标准图形 + 函数/坐标系图形**」的墨迹经验分别搬到浏览器与 WPF，几何算法全部自研重写。
 
 ## 在线试用
 
 - 在线版： https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/
-- 离线单文件版：`dist/inkboard-standalone.html`（约 165 KB，双击即用，断网也能上课；由 CI 自动生成）
+- 离线单文件版：`dist/inkboard-standalone.html`（约 170 KB，双击即用，断网也能上课；由 CI 自动生成）
 
-## 为什么是 Web，而不是继续用 WPF
+## 桌面版（WPF）
 
-| 维度 | WPF（上游项目） | 墨板 InkBoard |
+- 源码：`wpf/`，原生 WPF（.NET 10），**不依赖 WebView2、不依赖第三方 PDF 库**（PDF 用系统自带 `Windows.Data.Pdf` 渲染）
+- 编译产物：仓库 **Actions → WPF Build → 最新一次运行 → Artifacts → `InkBoard-wpf`**（需登录 GitHub 下载），解压后运行 `InkBoard.exe`
+- 本地构建：`dotnet build wpf/InkBoard.Wpf.csproj -c Release`（需 .NET SDK 10 + Windows 10 1809 以上）
+- 能力：时间笔锋、荧光笔、橡皮（整笔）、7 种图形 + 坐标系 + 函数图像、文字、选择移动、激光笔、全屏授课、计时器、聚光灯、遮罩揭幕、多页管理、5 种背景、PDF 逐页导入、导出 PNG / 打印 PDF、`.json` 工程读写
+- 详情与已知限制见 [`wpf/README.md`](wpf/README.md)
+
+## 为什么默认走 Web
+
+| 维度 | WPF（上游项目） | 墨板 InkBoard（Web 版） |
 |---|---|---|
 | 部署 | 需安装 .exe、.NET 运行时、驱动 | 打开浏览器即可，可 PWA 离线 |
 | 平台 | Windows only | Windows / 鸿蒙 / Android 一体机通吃 |
@@ -19,7 +27,7 @@
 | 升级 | 重新安装 | 刷新页面 |
 | 手写笔 | 需 WinRT 墨水栈 | Pointer Events + coalesced 事件，直取高频采样 |
 
-一体机的痛点不是“功能少”，而是“装不上、跑不动、一升级就崩”。所以本项目把“有没有”交给浏览器，把“卡不卡”交给分层画布与脏区重绘。
+一体机的痛点不是“功能少”，而是“装不上、跑不动、一升级就崩”。所以默认版把“有没有”交给浏览器，把“卡不卡”交给分层画布与脏区重绘；需要纯原生手感或必须离线装机时，再用 `wpf/` 版本。
 
 ## 核心能力
 
@@ -67,7 +75,7 @@
 
 ## 构建与本地运行
 
-无需任何依赖（不需要 npm install）：
+Web 版无需任何依赖（不需要 npm install）：
 
 ```bash
 node build.mjs                 # 生成 index.html（多文件版）+ dist/inkboard-standalone.html（单文件版）
@@ -76,6 +84,18 @@ python3 -m http.server 8123    # 本地预览：http://localhost:8123
 
 `build.mjs` 只做一件事：把 `src/template.html` 里的 `src/*.js` 与两个 CSS 内联成一个 HTML（单文件版），同时写一份保留外链的多文件版。
 
+WPF 版：
+
+```bash
+dotnet build wpf/InkBoard.Wpf.csproj -c Release
+```
+
+在 Linux / macOS 上交叉编译检查（不产 exe，仅验证代码可编译）：
+
+```bash
+dotnet build wpf/InkBoard.Wpf.csproj -c Release -p:EnableWindowsTargeting=true
+```
+
 ## 目录结构
 
 ```
@@ -83,27 +103,29 @@ SCHOOL_TOOLS_BOARD/
 ├─ build.mjs                 # 零依赖构建脚本
 ├─ manifest.json / sw.js     # PWA：可安装、可离线
 ├─ icons/icon.svg            # 矢量图标
-├─ src/
-│  ├─ template.html          # 页面骨架（工具、弹窗、课堂工具全在这里）
-│  ├─ style.css              # 基准样式（1920×1080 设计基准）
-│  ├─ style-ui-scale.css     # 大屏 / 4K 缩放覆盖层（--u）
-│  ├─ 00-util.js             # 工具函数、IndexedDB、防抖
-│  ├─ 10-geometry.js         # 笔迹几何、手绘识别、表达式解析
-│  ├─ 20-model.js            # 文档模型、对象、命中测试、撤销栈
-│  ├─ 30-render.js           # 画布分层、视口变换、页面渲染、FPS
-│  ├─ 40-input.js            # Pointer Events、双指缩放、手掌防误触
-│  ├─ 50-tools.js            # 9 个工具（笔、荧光笔、橡皮、图形、选择、文本、图片、激光、漫游）
-│  ├─ 60-ui.js               # 界面装配：工具栏、取色、图形面板、页面栏
-│  ├─ 65-ui-tools.js         # 课堂工具：聚光灯、遮罩、放大镜、计时、点名、导出
-│  └─ 70-main.js             # 应用主逻辑：状态、撤销、持久化、PDF / 导出
-└─ .github/workflows/pages.yml  # CI：构建并发布到 GitHub Pages
+├─ src/                      # Web 版前端（template.html / style*.css / 00~70*.js）
+├─ dist/inkboard-standalone.html   # CI 生成的离线单文件版
+├─ wpf/                      # WPF 桌面版（.NET 10）
+│  ├─ InkBoard.Wpf.csproj
+│  ├─ App.xaml / App.xaml.cs      # 主题与资源（绿色 #0e9f76）
+│  ├─ MainWindow.xaml(.cs)        # 主窗口、工具条、页栏
+│  ├─ MainWindow.Files.cs         # 打开/保存/导出/PDF 导入
+│  ├─ MainWindow.Classroom.cs     # 全屏授课、计时器、聚光灯、遮罩
+│  ├─ MainWindow.Keys.cs          # 快捷键、翻页、撤销重做
+│  ├─ MainWindow.Pages.cs         # 页面增删复制
+│  ├─ MainWindow.Text.cs          # 文字输入对话框
+│  └─ Core/                       # 模型、笔迹几何、双图层画板、绘制导出、PDF
+└─ .github/workflows/
+   ├─ pages.yml                # Web 版构建并发布 GitHub Pages
+   └─ wpf.yml                  # WPF 版在 windows-latest 上编译并上传产物
 ```
 
 ## 在课堂一体机上用
 
-1. 用一体机浏览器打开在线版（或把 `inkboard-standalone.html` 拷到 U 盘里双击）；
-2. 点右上角「全屏授课」进入沉浸模式（工具条变淡，顶栏自动隐藏）；
-3. 想离线常驻：浏览器菜单「添加到主屏幕」即可安装为 PWA。
+1. Web 版：用一体机浏览器打开在线版（或把 `inkboard-standalone.html` 拷到 U 盘里双击）；
+2. WPF 版：从 Actions 产物里取 `InkBoard-wpf`，解压后直接双击 `InkBoard.exe`（Windows 10 1809 以上，无需装 .NET）；
+3. 点右上角「全屏授课」进入沉浸模式（工具条变淡，顶栏自动隐藏）；
+4. 想离线常驻：浏览器菜单「添加到主屏幕」即可安装为 PWA。
 
 ## 与希沃白板的差距（实话实说）
 
