@@ -1,9 +1,11 @@
-# 墨板 InkBoard · WPF 桌面版
+# School Tools Board · 课堂白板（STB）· WPF 桌面版
 
 原生 WPF（.NET 10）实现，**不依赖 WebView2、不依赖第三方 PDF 库**，直接跑在 Windows 课堂触控一体机上。
-同一套产品思想与数据模型与 Web 版（仓库根目录）一致：从 `me13354091017/SCHOOL_TOOLS_PDF`（InkCanvasForPDF 衍生）的墨迹白板思路延续而来，几何算法全部自研。
+同一套产品思想与数据模型与 Web 版（仓库根目录）一致：从 `me13354091017/SCHOOL_TOOLS_PDF`（InkCanvasForPDF 派生）的墨迹白板思路延续而来，几何算法全部自研。
 
-下载：<https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/inkboard-wpf.exe>（自包含单文件，约 71 MB，双击运行，无需装 .NET）
+本应用是 [SCHOOL_TOOLS](https://me13354091017.github.io/school_tools/) 旗下应用，图标与母站同源（玻璃板叠层 + 暖色底条），字母标记 **STB**。
+
+下载：<https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/school-tools-board.exe>（自包含单文件，约 68 MB，双击运行，无需装 .NET）
 
 ## 与 Web 版的关系
 
@@ -28,6 +30,7 @@
 - 页面：多页、新建/复制/删除、5 种背景（空白 / 网格 / 点阵 / 横线 / 黑板）、16:9 与 4:3
 - 导入导出：`.json` 工程读写、拖拽打开、PDF 逐页导入为白板底图、导出 PNG、打印为 PDF
 - 性能：静态层缓存 + 实时层，FPS 面板（工具条「性能」）
+- 图标：`Assets/app.ico`，由 `icons/icon.svg` 生成（CI 里自动做，本地可 `convert -background none icons/icon.svg -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico`）
 
 ## 构建
 
@@ -38,7 +41,7 @@ dotnet build wpf/InkBoard.Wpf.csproj -c Release
 dotnet run  --project wpf/InkBoard.Wpf.csproj
 ```
 
-输出：`wpf/bin/Release/net10.0-windows10.0.19041.0/InkBoard.exe`
+输出：`wpf/bin/Release/net10.0-windows10.0.19041.0/SchoolToolsBoard.exe`（程序集名 `SchoolToolsBoard`，命名空间仍为 `InkBoard`）
 
 自包含单文件发布（用户无需装 .NET，体积约 68 MB）：
 
@@ -48,7 +51,7 @@ dotnet publish wpf/InkBoard.Wpf.csproj -c Release -r win-x64 --self-contained tr
   -p:IncludeNativeLibrariesForSelfExtract=true -o pub-wpf
 ```
 
-CI：`.github/workflows/wpf.yml` 在 `windows-latest` 上编译并上传产物（Actions → Artifacts）。
+CI：`.github/workflows/wpf.yml` 在 `windows-latest` 上编译并上传产物（Actions → Artifacts → `SchoolToolsBoard-wpf`）。
 
 ## 已知限制
 
