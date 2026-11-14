@@ -15,7 +15,7 @@ namespace InkBoard
         /* ------------------------------ 文件 ------------------------------ */
         void OpenDoc()
         {
-            var dlg = new OpenFileDialog { Filter = "墨板工程 (*.inkboard.json)|*.json|所有文件|*.*" };
+            var dlg = new OpenFileDialog { Filter = "白板工程 (*.json)|*.json|所有文件|*.*" };
             if (dlg.ShowDialog() != true) return;
             LoadDocFrom(dlg.FileName);
         }
@@ -38,7 +38,7 @@ namespace InkBoard
 
         void SaveDoc()
         {
-            var dlg = new SaveFileDialog { Filter = "墨板工程 (*.json)|*.json", FileName = "板书.json" };
+            var dlg = new SaveFileDialog { Filter = "白板工程 (*.json)|*.json", FileName = "板书.json" };
             if (dlg.ShowDialog() != true) return;
             try
             {
@@ -65,7 +65,7 @@ namespace InkBoard
             var dv = new DrawingVisual();
             using (var dc = dv.RenderOpen())
                 dc.DrawImage(bmp, new Rect(0, 0, dlg.PrintableAreaWidth, dlg.PrintableAreaHeight));
-            dlg.PrintVisual(dv, "墨板 InkBoard");
+            dlg.PrintVisual(dv, "School Tools Board");
         }
 
         async void ImportPdf()
@@ -74,7 +74,7 @@ namespace InkBoard
             if (dlg.ShowDialog() != true) return;
             try
             {
-                int n = await PdfImport.ImportAsync(dlg.FileName, _doc, s => Title = "墨板 InkBoard · " + s);
+                int n = await PdfImport.ImportAsync(dlg.FileName, _doc, s => Title = "School Tools Board · " + s);
                 _board.SetDoc(_doc);
                 _board.FitPage();
                 RefreshPages();
@@ -109,7 +109,7 @@ namespace InkBoard
             if (_pendingPdf == null) return;
             try
             {
-                int n = await PdfImport.ImportAsync(_pendingPdf, _doc, s => Title = "墨板 InkBoard · " + s);
+                int n = await PdfImport.ImportAsync(_pendingPdf, _doc, s => Title = "School Tools Board · " + s);
                 _pendingPdf = null;
                 _board.SetDoc(_doc);
                 _board.FitPage();
