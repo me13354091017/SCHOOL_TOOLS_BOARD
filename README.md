@@ -12,9 +12,10 @@
 ## 桌面版（WPF）
 
 - 源码：`wpf/`，原生 WPF（.NET 10），**不依赖 WebView2、不依赖第三方 PDF 库**（PDF 用系统自带 `Windows.Data.Pdf` 渲染）
+- 直接下载：<https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/inkboard-wpf.exe>（自包含单文件，约 71 MB，双击即用，无需装 .NET）
 - 编译产物：仓库 **Actions → WPF Build → 最新一次运行 → Artifacts → `InkBoard-wpf`**（需登录 GitHub 下载），解压后运行 `InkBoard.exe`
 - 本地构建：`dotnet build wpf/InkBoard.Wpf.csproj -c Release`（需 .NET SDK 10 + Windows 10 1809 以上）
-- 能力：时间笔锋、荧光笔、橡皮（整笔）、7 种图形 + 坐标系 + 函数图像、文字、选择移动、激光笔、全屏授课、计时器、聚光灯、遮罩揭幕、多页管理、5 种背景、PDF 逐页导入、导出 PNG / 打印 PDF、`.json` 工程读写
+- 能力：时间笔锋、荧光笔、按点切割橡皮、手绘转标准图形、7 种图形 + 坐标系 + 函数图像、文字、选择移动、激光笔、全屏授课、计时器、聚光灯、遮罩揭幕、多页管理、5 种背景、PDF 逐页导入、导出 PNG / 打印 PDF、`.json` 工程读写
 - 详情与已知限制见 [`wpf/README.md`](wpf/README.md)
 
 ## 为什么默认走 Web
@@ -114,7 +115,7 @@ SCHOOL_TOOLS_BOARD/
 │  ├─ MainWindow.Keys.cs          # 快捷键、翻页、撤销重做
 │  ├─ MainWindow.Pages.cs         # 页面增删复制
 │  ├─ MainWindow.Text.cs          # 文字输入对话框
-│  └─ Core/                       # 模型、笔迹几何、双图层画板、绘制导出、PDF
+│  └─ Core/                       # 模型、笔迹几何、橡皮切割、图形识别、双图层画板、绘制导出、PDF
 └─ .github/workflows/
    ├─ pages.yml                # Web 版构建并发布 GitHub Pages
    └─ wpf.yml                  # WPF 版在 windows-latest 上编译并上传产物
@@ -123,7 +124,7 @@ SCHOOL_TOOLS_BOARD/
 ## 在课堂一体机上用
 
 1. Web 版：用一体机浏览器打开在线版（或把 `inkboard-standalone.html` 拷到 U 盘里双击）；
-2. WPF 版：从 Actions 产物里取 `InkBoard-wpf`，解压后直接双击 `InkBoard.exe`（Windows 10 1809 以上，无需装 .NET）；
+2. WPF 版：下载 <https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/inkboard-wpf.exe> 双击运行（Windows 10 1809 以上，无需装 .NET；也可在 Actions 产物里取 `InkBoard-wpf`）；
 3. 点右上角「全屏授课」进入沉浸模式（工具条变淡，顶栏自动隐藏）；
 4. 想离线常驻：浏览器菜单「添加到主屏幕」即可安装为 PWA。
 
