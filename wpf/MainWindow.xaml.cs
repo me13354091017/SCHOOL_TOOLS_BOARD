@@ -38,6 +38,9 @@ namespace InkBoard
         {
             InitializeComponent();
 
+            // 应用图标（由 icons/icon.svg 生成的 Assets/app.ico；未生成时静默跳过）
+            try { Icon = new BitmapImage(new Uri("pack://application:,,,/Assets/app.ico")); } catch { }
+
             _doc = Doc.Create();
             _board = new BoardView { Doc = _doc };
             _board.Commit = () => _history.Push(_doc);
@@ -270,7 +273,7 @@ namespace InkBoard
 
         void UpdateTitle()
         {
-            Title = string.Format("墨板 InkBoard · 第 {0}/{1} 页", _doc.Current + 1, _doc.Pages.Count);
+            Title = string.Format("School Tools Board · 第 {0}/{1} 页", _doc.Current + 1, _doc.Pages.Count);
         }
 
     }
