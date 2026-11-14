@@ -1,7 +1,7 @@
 # 墨板 InkBoard · WPF 桌面版
 
 原生 WPF（.NET 10）实现，**不依赖 WebView2、不依赖第三方 PDF 库**，直接跑在 Windows 课堂触控一体机上。
-同一套产品思想与数据模型与 Web 版（仓库根目录）一致：从 `me13354091017/SCHOOL_TOOLS_PDF`（InkCanvasForPDF 派生）的墨迹白板思路延续而来，几何算法全部自研。
+同一套产品思想与数据模型与 Web 版（仓库根目录）一致：从 `me13354091017/SCHOOL_TOOLS_PDF`（InkCanvasForPDF 衍生）的墨迹白板思路延续而来，几何算法全部自研。
 
 ## 与 Web 版的关系
 
@@ -17,7 +17,8 @@
 ## 功能
 
 - 笔迹：笔 / 荧光笔；4px 重采样 + 速度定宽 + 起收笔包络 + 法线轮廓（时间笔锋）
-- 橡皮：整笔擦除（按点切割尚未实现）
+- 橡皮：按点切割，只擦掉经过的一段，笔迹分成几段保留
+- **手绘转标准图形**：抬笔即判断——直线度 > 0.99 → 直线，闭合笔迹按简化顶点数分类（3 → 三角形、4 → 矩形、圆度 > 0.82 → 圆/椭圆），工具条「智能转图形」可开关
 - 图形：直线、箭头、矩形、圆、三角形、坐标系（自动刻度/箭头/O·x·y 标注）、函数图像（自研表达式解析，支持 `sin/cos/tan/sqrt/abs/ln/log/exp`、`pi/e`、`^`）
 - 文字：多行文本框，可再次编辑
 - 选择：框选、拖动、Delete 删除、Ctrl+D 复制
@@ -37,15 +38,21 @@ dotnet run  --project wpf/InkBoard.Wpf.csproj
 
 输出：`wpf/bin/Release/net10.0-windows10.0.19041.0/InkBoard.exe`
 
-CI：`.github/workflows/wpf.yml` 在 `windows-latest` 上编译并上传产物（Actions → Artifacts）。
+自包含单文件发布（用户无需装 .NET，体积约 71 MB）：
+
+```powershell
+dotnet publish wpf/InkBoard.Wpf.csproj -c Release -r win-x64 --self-contained true `
+  -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true `
+  -p:IncludeNativeLibrariesForSelfExtract=true -o pub-wpf
+```
+
+CI：`.github/workflows/wpf.yml` 在 `windows-latest` 上编译并上传产物（Actions → Artifacts）。在线版站点也直接提供下载：<https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/inkboard-wpf.exe>
 
 ## 已知限制
 
-- 橡皮为整笔擦除，未做按点切割（Web 版已实现）
-- 手绘转标准图形（自动识别圆/矩形/直线）未移植（Web 版已实现）
 - PDF 底图不参与工程序列化（`.json` 只存笔迹与图形）
 - 页面比例是全局设置，单页不可单独设定
-- 本机开发环境为 Linux，未能本地编译验证，以 GitHub Actions 构建结果为准
+- 已在 .NET SDK 10 下交叉编译验证（0 error / 0 warning），实际笔感需在 Windows 一体机上跑一遍确认
 
 ## 许可
 

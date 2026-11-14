@@ -21,22 +21,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node 20
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
 
-      - name: Build (index.html + 单文件版)
+      - name: Build web bundle
         run: node build.mjs
 
-      - name: Assemble static site
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # 在 Linux 上交叉编译 Windows WPF 版（自包含单文件，用户无需装 .NET）
+      - name: Publish WPF (win-x64, self-contained)
+        continue-on-error: true
+        run: |
+          dotnet publish wpf/InkBoard.Wpf.csproj -c Release -r win-x64 \
+            --self-contained true \
+            -p:EnableWindowsTargeting=true \
+            -p:PublishSingleFile=true \
+            -p:EnableCompressionInSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -o pub-wpf
+
+      - name: Assemble site
         run: |
           mkdir -p _site
           cp index.html sw.js manifest.json _site/
           cp -r src icons dist _site/
-          ls -R _site | head -40
+          if [ -f pub-wpf/InkBoard.exe ]; then
+            mkdir -p _site/download
+            cp pub-wpf/InkBoard.exe _site/download/inkboard-wpf.exe
+            cp LICENSE _site/download/LICENSE.txt
+            ls -lh _site/download/inkboard-wpf.exe
+          fi
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
