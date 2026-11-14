@@ -133,14 +133,24 @@ namespace InkBoard
             AddShape("函数", ShapeKind.Func);
             ToolBar.Children.Add(Sep());
 
+            var smart = new Button { Content = "智能转图形", Style = ToolStyle, ToolTip = "手绘自动变成直线 / 三角 / 矩形 / 圆" };
+            PaintChip(smart, _board.SmartShape);
+            smart.Click += (s, e) => { _board.SmartShape = !_board.SmartShape; PaintChip(smart, _board.SmartShape); };
+            ToolBar.Children.Add(smart);
+
             var fill = new Button { Content = "填充", Style = ToolStyle, ToolTip = "图形填充" };
             fill.Click += (s, e) =>
             {
                 _board.FillShape = !_board.FillShape;
-                fill.Background = _board.FillShape ? Accent : (Brush)new SolidColorBrush(Color.FromRgb(0xF1, 0xF5, 0xF9));
-                fill.Foreground = _board.FillShape ? Brushes.White : (Brush)new SolidColorBrush(Color.FromRgb(0x33, 0x41, 0x55));
+                PaintChip(fill, _board.FillShape);
             };
             ToolBar.Children.Add(fill);
+        }
+
+        void PaintChip(Button b, bool on)
+        {
+            b.Background = on ? Accent : (Brush)new SolidColorBrush(Color.FromRgb(0xF1, 0xF5, 0xF9));
+            b.Foreground = on ? Brushes.White : (Brush)new SolidColorBrush(Color.FromRgb(0x33, 0x41, 0x55));
         }
 
         void AddTool(string text, ToolKind kind, string key)
