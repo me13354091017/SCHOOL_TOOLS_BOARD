@@ -38,6 +38,7 @@ jobs:
         run: python3 tools/rebrand-stb.py
 
       - name: Install ImageMagick
+        continue-on-error: true
         run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
 
       - name: Generate app icon
