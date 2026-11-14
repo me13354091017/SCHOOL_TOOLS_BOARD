@@ -18,7 +18,11 @@
 
       <Border DockPanel.Dock="Left" Width="118" Background="#FFFFFF" BorderBrush="#E5E8EC" BorderThickness="0,0,1,0">
         <DockPanel>
-          <StackPanel x:Name="PageBar" DockPanel.Dock="Top" Orientation="Horizontal" Margin="6,8" />
+          <WrapPanel x:Name="PageBar" DockPanel.Dock="Top" Margin="6,8">
+            <Button Content="新建" Style="{StaticResource ToolButton}" Padding="7,4" Margin="0,0,4,4" Click="OnAddPage" ToolTip="新建空白页" />
+            <Button Content="复制" Style="{StaticResource ToolButton}" Padding="7,4" Margin="0,0,4,4" Click="OnDupPage" ToolTip="复制当前页" />
+            <Button Content="删除" Style="{StaticResource ToolButton}" Padding="7,4" Margin="0,0,0,4" Click="OnDelPage" ToolTip="删除当前页" />
+          </WrapPanel>
           <Border DockPanel.Dock="Bottom" BorderBrush="#E5E8EC" BorderThickness="0,1,0,0" Padding="6,6">
             <StackPanel x:Name="RailFooter" Orientation="Vertical" />
           </Border>

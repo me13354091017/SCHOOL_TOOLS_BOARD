@@ -1,0 +1,34 @@
+name: WPF Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wpf/**'
+      - '.github/workflows/wpf.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Show SDK
+        run: dotnet --list-sdks
+
+      - name: Build
+        run: dotnet build wpf/InkBoard.Wpf.csproj -c Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: InkBoard-wpf
+          path: wpf/bin/Release/net10.0-windows10.0.19041.0/
+          if-no-files-found: warn
