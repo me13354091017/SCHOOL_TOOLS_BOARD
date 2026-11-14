@@ -18,23 +18,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
 
-      - name: 构建（单文件版 + 多文件版）
+      - name: Build (index.html + 单文件版)
         run: node build.mjs
 
-      - name: 组装发布目录
+      - name: Assemble static site
         run: |
-          mkdir -p _site/dist
+          mkdir -p _site
           cp index.html sw.js manifest.json _site/
-          cp -r src icons _site/
-          cp dist/inkboard-standalone.html _site/dist/
+          cp -r src icons dist _site/
+          ls -R _site | head -40
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: _site
 
@@ -45,5 +48,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
