@@ -35,6 +35,17 @@ jobs:
           dotnet-version: '10.0.x'
 
       # 在 Linux 上交叉编译 Windows WPF 版（自包含单文件，用户无需装 .NET）
+      - name: Install ImageMagick
+        continue-on-error: true
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
+
+      - name: Generate app icon
+        continue-on-error: true
+        run: |
+          mkdir -p wpf/Assets
+          convert -background none icons/icon.svg \
+            -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico
+
       - name: Publish WPF (win-x64, self-contained)
         continue-on-error: true
         run: |
@@ -51,11 +62,11 @@ jobs:
           mkdir -p _site
           cp index.html sw.js manifest.json _site/
           cp -r src icons dist _site/
-          if [ -f pub-wpf/InkBoard.exe ]; then
+          if [ -f pub-wpf/SchoolToolsBoard.exe ]; then
             mkdir -p _site/download
-            cp pub-wpf/InkBoard.exe _site/download/inkboard-wpf.exe
+            cp pub-wpf/SchoolToolsBoard.exe _site/download/school-tools-board.exe
             curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o _site/download/LICENSE.txt || cp LICENSE _site/download/LICENSE.txt
-            ls -lh _site/download/inkboard-wpf.exe _site/download/LICENSE.txt
+            ls -lh _site/download/school-tools-board.exe
           fi
 
       - name: Upload Pages artifact
