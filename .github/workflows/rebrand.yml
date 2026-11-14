@@ -1,78 +1,14 @@
 name: Rebrand to STB
 
+# 已完成：品牌统一为 School Tools Board（STB）课堂白板，迁移结果已直接合入 main。
+# 本工作流仅保留手动入口，不再自动触发。
+
 on:
-  push:
-    paths:
-      - 'tools/rebrand-stb.py'
-      - '.github/workflows/rebrand.yml'
   workflow_dispatch:
 
-permissions:
-  contents: write
-
-concurrency:
-  group: rebrand
-  cancel-in-progress: false
-
 jobs:
-  rebrand:
+  done:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Apply rebrand script
-        run: |
-          set -o pipefail
-          python3 tools/rebrand-stb.py 2>&1 | tee /tmp/log.txt
-
-      - name: Install ImageMagick
-        continue-on-error: true
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick 2>&1 | tail -3 | tee -a /tmp/log.txt
-
-      - name: Generate app icon
-        continue-on-error: true
-        run: |
-          mkdir -p wpf/Assets
-          convert -background none icons/icon.svg -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico 2>&1 | tee -a /tmp/log.txt
-
-      - name: Sanity build (web + wpf)
-        continue-on-error: true
-        run: |
-          node build.mjs 2>&1 | tee -a /tmp/log.txt
-          dotnet build wpf/InkBoard.Wpf.csproj -c Release -p:EnableWindowsTargeting=true 2>&1 | tail -20 | tee -a /tmp/log.txt
-
-      - name: Commit and push to rebrand branch
-        env:
-          BRANCH: rebrand/stb
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B "$BRANCH"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "没有需要提交的改动" | tee -a /tmp/log.txt
-            exit 0
-          fi
-          git commit -m "chore(stb): 品牌统一为 School Tools Board（STB）课堂白板" 2>&1 | tee -a /tmp/log.txt
-          git push --force origin "HEAD:refs/heads/$BRANCH" 2>&1 | tee -a /tmp/log.txt
-
-      - name: Publish log to run summary
-        if: always()
-        run: |
-          echo '<details><summary>rebrand log</summary>' >> $GITHUB_STEP_SUMMARY
-          echo '' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -c 5000 /tmp/log.txt >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo '(no log)' >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo '</details>' >> $GITHUB_STEP_SUMMARY
+      - name: Done
+        run: echo "迁移已完成：产品名 School Tools Board · 课堂白板，图标 STB。详见 README。"
