@@ -24,6 +24,7 @@ namespace InkBoard
         public ShapeKind Shape = ShapeKind.Line;
         public bool FillShape;
         public bool ShowPerf;
+        public bool SmartShape = true;   // 手绘转标准图形
         public string FuncExpr = "sin(x)";
 
         public Action Commit;       // 需要记入撤销栈时回调
@@ -384,7 +385,13 @@ namespace InkBoard
                         if (_cur.Pts.Count > 0)
                         {
                             Ink.Build(_cur);
-                            Doc.Cur.Objects.Add(_cur);
+                            Obj add = _cur;
+                            if (SmartShape && Tool == ToolKind.Pen)
+                            {
+                                var rec = Recognize.Try(_cur);
+                                if (rec != null) add = rec;
+                            }
+                            Doc.Cur.Objects.Add(add);
                         }
                         _cur = null;
                         AfterEdit();
@@ -440,24 +447,6 @@ namespace InkBoard
                 case ShapeKind.Func: o.Shape = "func"; break;
             }
             return o;
-        }
-
-        void EraseAt(Point wp)
-        {
-            var page = Doc.Cur;
-            double tol = Math.Max(10, PenWidth * 1.6);
-            for (int i = page.Objects.Count - 1; i >= 0; i--)
-            {
-                var o = page.Objects[i];
-                var bb = o.Bounds();
-                bb.Inflate(8, 8);
-                if (bb.Contains(wp) && Ink.Hit(o, wp, tol))
-                {
-                    page.Objects.RemoveAt(i);
-                    _erased = true;
-                    InvalidateStatic();
-                }
-            }
         }
 
         static void Translate(Obj o, double dx, double dy)
