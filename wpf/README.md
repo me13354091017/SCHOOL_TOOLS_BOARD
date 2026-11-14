@@ -3,6 +3,8 @@
 原生 WPF（.NET 10）实现，**不依赖 WebView2、不依赖第三方 PDF 库**，直接跑在 Windows 课堂触控一体机上。
 同一套产品思想与数据模型与 Web 版（仓库根目录）一致：从 `me13354091017/SCHOOL_TOOLS_PDF`（InkCanvasForPDF 衍生）的墨迹白板思路延续而来，几何算法全部自研。
 
+下载：<https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/inkboard-wpf.exe>（自包含单文件，约 71 MB，双击运行，无需装 .NET）
+
 ## 与 Web 版的关系
 
 | | Web 版 | WPF 桌面版 |
@@ -12,13 +14,13 @@
 | 触控 | Pointer Events | WPF `Stylus` / `Touch` / `Manipulation` |
 | PDF 底图 | pdf.js | 系统自带 `Windows.Data.Pdf` |
 | 离线 | PWA 缓存 | 绿色单文件，直接运行 |
-| 压感 | 支持触摸压感 | 支持笔压（`StylusPoint.PressureFactor`） |
+| 笔宽 | 速度 + 压感 | 速度定宽（笔压采样已拿得到，尚未接入笔宽） |
 
 ## 功能
 
 - 笔迹：笔 / 荧光笔；4px 重采样 + 速度定宽 + 起收笔包络 + 法线轮廓（时间笔锋）
 - 橡皮：按点切割，只擦掉经过的一段，笔迹分成几段保留
-- **手绘转标准图形**：抬笔即判断——直线度 > 0.99 → 直线，闭合笔迹按简化顶点数分类（3 → 三角形、4 → 矩形、圆度 > 0.82 → 圆/椭圆），工具条「智能转图形」可开关
+- **手绘转标准图形**：抬笔即判断——弦长/路径长 > 0.92 且偏离 < 5.5% → 直线，闭合笔迹按简化顶点数分类（3 → 三角形、4 → 矩形、圆度 > 0.82 → 圆/椭圆），工具条「智能转图形」可开关
 - 图形：直线、箭头、矩形、圆、三角形、坐标系（自动刻度/箭头/O·x·y 标注）、函数图像（自研表达式解析，支持 `sin/cos/tan/sqrt/abs/ln/log/exp`、`pi/e`、`^`）
 - 文字：多行文本框，可再次编辑
 - 选择：框选、拖动、Delete 删除、Ctrl+D 复制
@@ -38,7 +40,7 @@ dotnet run  --project wpf/InkBoard.Wpf.csproj
 
 输出：`wpf/bin/Release/net10.0-windows10.0.19041.0/InkBoard.exe`
 
-自包含单文件发布（用户无需装 .NET，体积约 71 MB）：
+自包含单文件发布（用户无需装 .NET，体积约 68 MB）：
 
 ```powershell
 dotnet publish wpf/InkBoard.Wpf.csproj -c Release -r win-x64 --self-contained true `
@@ -46,10 +48,11 @@ dotnet publish wpf/InkBoard.Wpf.csproj -c Release -r win-x64 --self-contained tr
   -p:IncludeNativeLibrariesForSelfExtract=true -o pub-wpf
 ```
 
-CI：`.github/workflows/wpf.yml` 在 `windows-latest` 上编译并上传产物（Actions → Artifacts）。在线版站点也直接提供下载：<https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/inkboard-wpf.exe>
+CI：`.github/workflows/wpf.yml` 在 `windows-latest` 上编译并上传产物（Actions → Artifacts）。
 
 ## 已知限制
 
+- 笔压尚未接入笔宽（目前按速度定宽）
 - PDF 底图不参与工程序列化（`.json` 只存笔迹与图形）
 - 页面比例是全局设置，单页不可单独设定
 - 已在 .NET SDK 10 下交叉编译验证（0 error / 0 warning），实际笔感需在 Windows 一体机上跑一遍确认
