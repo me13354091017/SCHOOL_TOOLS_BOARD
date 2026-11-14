@@ -162,14 +162,14 @@
       this.drawBackground(ctx);
       ctx.restore();
 
-      // 对象
+      // 对象（视口剔除：四边均判断，仅内容完全在视口外时才跳过）
       ctx.save();
       this.applyTransform(ctx);
       const objects = this.page.objects;
       const vr = this.viewRect();
       for (const o of objects) {
         const b = M.objBBox(o);
-        if (b.x > vr.x + vr.w || b.x + b.w > vr.x + vr.w || b.x + b.w < vr.x || b.y + b.h < vr.y) continue;
+        if (b.x > vr.x + vr.w || b.x + b.w < vr.x || b.y > vr.y + vr.h || b.y + b.h < vr.y) continue;
         this.drawObject(ctx, o);
       }
       ctx.restore();
