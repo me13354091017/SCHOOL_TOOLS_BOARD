@@ -3,7 +3,7 @@
  *   node build.mjs
  * 产物：
  *   index.html                      （多文件版，GitHub Pages 直接使用）
- *   dist/inkboard-standalone.html   （单文件版，可拷进 U 盘双击打开）
+ *   dist/stb-standalone.html   （单文件版，可拷进 U 盘双击打开）
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,7 +30,12 @@ let single = tpl
   .replace(/<script src="src\/[^"]*"><\/script>\n?/g, '');
 single = single.replace('</body>', `<script>\n(function(){\n${js}\n})();\n</script>\n</body>`);
 
+// 单文件版：把 STB 图标内联为 data URI，单独拷走也不丢图标
+const iconData = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(read('icons/icon.svg'));
+single = single.replace(/<link rel="(?:icon|apple-touch-icon)"[^>]*\/>/g, '')
+               .replace('src="icons/icon.svg"', `src="${iconData}"`);
+
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
-fs.writeFileSync(path.join(root, 'dist/inkboard-standalone.html'), single);
+fs.writeFileSync(path.join(root, 'dist/stb-standalone.html'), single);
 console.log('✓ index.html 已生成（多文件版）');
-console.log('✓ dist/inkboard-standalone.html 已生成（单文件版，' + (single.length / 1024).toFixed(0) + ' KB）');
+console.log('✓ dist/stb-standalone.html 已生成（单文件版，' + (single.length / 1024).toFixed(0) + ' KB）');
