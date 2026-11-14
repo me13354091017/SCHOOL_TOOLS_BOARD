@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#0e9f76" />
+<meta name="description" content="墨板 InkBoard — 面向课堂触控一体机的开源白板软件：时间笔锋、图形识别、多页板书、课堂工具" />
+<title>墨板 InkBoard · 课堂白板</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="src/style.css" />
+<link rel="stylesheet" href="src/style-ui-scale.css" />
+</head>
+<body>
+<div id="app" class="app" data-tool="pen">
+
+  <!-- ================= 画布舞台 ================= -->
+  <div class="stage" id="stage">
+    <canvas id="layer-page"></canvas>
+    <canvas id="layer-live"></canvas>
+
+    <div class="spotlight" id="spotlight" hidden><span class="spot-hint">拖动移动光斑 · 滚轮调整大小</span></div>
+    <div class="curtain" id="curtain" hidden>
+      <div class="curtain-body"></div>
+      <div class="curtain-handle"><i></i>向下拖动揭幕</div>
+    </div>
+    <div class="magnifier" id="magnifier" hidden><canvas id="mag-canvas"></canvas></div>
+    <div class="board-float" id="board-float" hidden>
+      <div class="bf-head"><span>板中板</span><button class="mini-close" id="bf-close">×</button></div>
+      <textarea id="bf-text" placeholder="在这里快速写要点，可拖到白板上…"></textarea>
+      <div class="bf-foot"><button id="bf-to-board">贴到白板</button></div>
+    </div>
+  </div>
+
+  <!-- ================= 顶栏 ================= -->
+  <header class="topbar" id="topbar">
+    <div class="brand"><span class="brand-mark">墨</span><span class="brand-name">墨板 <i>InkBoard</i></span></div>
+    <div class="doc-wrap">
+      <input id="doc-title" class="doc-title" value="未命名白板" spellcheck="false" />
+      <span class="save-state" id="save-state">已保存</span>
+    </div>
+    <div class="spacer"></div>
+    <button class="ghost-btn" id="btn-open" title="打开本地白板文件">打开</button>
+    <button class="ghost-btn" id="btn-save" title="导出白板文件">保存</button>
+    <button class="icon-btn" id="btn-export" title="导出图片 / PDF">
+      <svg viewBox="0 0 24 24"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-zoom" title="适应页面">
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-fullscreen" title="全屏授课">
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5M9 9h6v6H9z"/></svg>
+    </button>
+    <button class="icon-btn" id="btn-perf" title="性能面板">
+      <svg viewBox="0 0 24 24"><path d="M4 18V9M10 18V5M16 18v-7M22 18h-20"/></svg>
+    </button>
+  </header>
+
+  <!-- ================= 左侧页面栏 ================= -->
+  <aside class="pagerail" id="pagerail">
+    <div class="page-thumbs" id="page-thumbs"></div>
+    <div class="page-actions">
+      <button class="page-btn" id="btn-add-page" title="新建页面">＋</button>
+      <button class="page-btn" id="btn-dup-page" title="复制当前页">⧉</button>
+      <button class="page-btn" id="btn-del-page" title="删除当前页">－</button>
+      <button class="page-btn" id="btn-page-bg" title="页面背景">▦</button>
+    </div>
+  </aside>
+
+  <!-- ================= 底部工具栏 ================= -->
+  <div class="toolbar" id="toolbar">
+    <div class="tool-group" id="tool-group">
+      <button class="tool" data-tool="select" title="选择 (Esc)">
+        <svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 2-2 6z"/></svg><span>选择</span>
+      </button>
+      <button class="tool" data-tool="pen" title="钢笔 (P)">
+        <svg viewBox="0 0 24 24"><path d="M4 20l3-1 11-11-2-2-11 11z"/><path d="M14 6l4 4"/></svg><span>钢笔</span>
+      </button>
+      <button class="tool" data-tool="marker" title="荧光笔 (M)">
+        <svg viewBox="0 0 24 24"><path d="M4 17l9-9 5 5-9 9H4z"/><path d="M13 8l3-3 5 5-3 3"/></svg><span>荧光笔</span>
+      </button>
+      <button class="tool" data-tool="eraser" title="橡皮 (E)">
+        <svg viewBox="0 0 24 24"><path d="M4 16l8-8 7 7-5 5H7z"/><path d="M11 20h9"/></svg><span>橡皮</span>
+      </button>
+      <button class="tool" data-tool="shape" title="图形 (S)">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="9" height="9"/><circle cx="16.5" cy="16.5" r="4.5"/></svg><span>图形</span>
+      </button>
+      <button class="tool" data-tool="text" title="文本 (T)">
+        <svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13M8.5 19h7"/></svg><span>文本</span>
+      </button>
+      <button class="tool" data-tool="image" title="插入图片">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="15"/><path d="M3 15l5-5 5 5 3-3 5 5"/><circle cx="8" cy="8.5" r="1.6"/></svg><span>图片</span>
+      </button>
+      <button class="tool" data-tool="laser" title="激光笔 (L)">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span>激光</span>
+      </button>
+      <button class="tool" data-tool="hand" title="漫游 (空格)">
+        <svg viewBox="0 0 24 24"><path d="M8 12V6a2 2 0 014 0v6M12 12V4a2 2 0 014 0v9M16 13V7a2 2 0 014 0v8c0 5-4 8-8 8s-7-3-8-7l-1-4a2 2 0 013-1l1 2"/></svg><span>漫游</span>
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="style-group">
+      <button class="color-chip" id="btn-color" title="颜色">
+        <i id="color-dot"></i>
+        <svg viewBox="0 0 24 24"><path d="M8 14l4 4 4-4"/></svg>
+      </button>
+      <div class="popover" id="pop-color" hidden>
+        <div class="pop-title">颜色</div>
+        <div class="swatches" id="swatches"></div>
+        <div class="pop-title">荧光笔</div>
+        <div class="swatches swatches-marker" id="swatches-marker"></div>
+        <div class="pop-title">粗细</div>
+        <div class="widths" id="widths"></div>
+      </div>
+
+      <div class="width-quick" id="width-quick"></div>
+
+      <button class="color-chip" id="btn-shape-kind" title="图形类型">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="8" height="8"/><path d="M14 8h6M11.5 16.5h9M16 12v9"/></svg>
+        <svg viewBox="0 0 24 24" class="chevron"><path d="M8 14l4 4 4-4"/></svg>
+      </button>
+      <div class="popover" id="pop-shape" hidden>
+        <div class="pop-title">图形工具</div>
+        <div class="shape-grid" id="shape-grid"></div>
+        <label class="switch-row"><span>手绘自动转标准图形</span><input type="checkbox" id="auto-shape" checked /></label>
+        <label class="switch-row"><span>填充图形</span><input type="checkbox" id="fill-shape" /></label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="action-group">
+      <button class="icon-btn" id="btn-undo" title="撤销 (Ctrl+Z)">
+        <svg viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M4 12h10a6 6 0 016 6"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-redo" title="重做 (Ctrl+Y)">
+        <svg viewBox="0 0 24 24"><path d="M15 7l5 5-5 5M20 12H10a6 6 0 00-6 6"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-delete" title="删除选中 (Del)">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= 课堂工具 ================= -->
+  <button class="fab" id="btn-classroom">
+    <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12"/><path d="M8 21h8M12 17v4"/></svg>
+    <span>课堂工具</span>
+  </button>
+
+  <aside class="drawer" id="drawer" hidden>
+    <div class="drawer-head">
+      <span>课堂工具</span>
+      <button class="mini-close" id="drawer-close">×</button>
+    </div>
+    <div class="drawer-body">
+      <div class="tile" data-act="timer">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 3h6"/></svg>
+        <strong>计时器</strong><span>课堂限时</span>
+      </div>
+      <div class="tile" data-act="rollcall">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="18" r="3"/></svg>
+        <strong>随机点名</strong><span>名单抽取</span>
+      </div>
+      <div class="tile" data-act="spotlight">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M5 5l3 3M19 5l-3 3M5 19l3-3M19 19l-3-3"/></svg>
+        <strong>聚光灯</strong><span>聚焦重点</span>
+      </div>
+      <div class="tile" data-act="curtain">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M4 9h16M12 16v4M8 20h8"/></svg>
+        <strong>遮罩揭幕</strong><span>分步呈现</span>
+      </div>
+      <div class="tile" data-act="magnifier">
+        <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+        <strong>放大镜</strong><span>局部放大</span>
+      </div>
+      <div class="tile" data-act="subboard">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/><rect x="8" y="8" width="10" height="8"/></svg>
+        <strong>板中板</strong><span>临时草稿</span>
+      </div>
+      <div class="tile" data-act="pdf">
+        <svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>
+        <strong>导入 PDF</strong><span>试卷讲评</span>
+      </div>
+      <div class="tile" data-act="bg">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16"/><path d="M4 12h16M12 4v16"/></svg>
+        <strong>页面背景</strong><span>纯白/方格/点阵</span>
+      </div>
+      <div class="tile" data-act="shortcuts">
+        <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h2M11 10h2M15 10h2M7 14h10"/></svg>
+        <strong>快捷键</strong><span>操作说明</span>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="link-btn" id="btn-clear-page">清空当前页</button>
+      <button class="link-btn" id="btn-clear-doc">清空全部</button>
+    </div>
+  </aside>
+
+  <!-- ================= 文本编辑浮层 ================= -->
+  <div class="text-editor" id="text-editor" hidden>
+    <textarea id="text-input" rows="1" spellcheck="false" placeholder="输入文字…"></textarea>
+    <div class="te-tools">
+      <button data-size="-2">A-</button>
+      <button data-size="2">A+</button>
+      <button id="te-done">完成</button>
+    </div>
+  </div>
+
+  <!-- ================= 通用弹窗 ================= -->
+  <div class="modal-layer" id="modal-layer" hidden>
+
+    <div class="modal" id="modal-timer" hidden>
+      <div class="modal-head"><h3>课堂计时器</h3><button class="mini-close" data-close>×</button></div>
+      <div class="modal-body timer-body">
+        <div class="timer-ring">
+          <svg viewBox="0 0 200 200"><circle class="ring-bg" cx="100" cy="100" r="88"/><circle class="ring-fg" id="ring-fg" cx="100" cy="100" r="88"/></svg>
+          <div class="timer-time" id="timer-time">05:00</div>
+        </div>
+        <div class="timer-presets">
+          <button data-min="1">1 分钟</button>
+          <button data-min="3">3 分钟</button>
+          <button data-min="5">5 分钟</button>
+          <button data-min="10">10 分钟</button>
+          <button data-min="15">15 分钟</button>
+        </div>
+        <div class="timer-actions">
+          <button class="primary" id="timer-toggle">开始</button>
+          <button id="timer-reset">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-rollcall" hidden>
+      <div class="modal-head"><h3>随机点名</h3><button class="mini-close" data-close>×</button></div>
+      <div class="modal-body">
+        <div class="roll-display" id="roll-name">准备开始</div>
+        <div class="roll-actions">
+          <button class="primary" id="roll-start">开始 / 停止</button>
+          <button id="roll-once">抽一个</button>
+        </div>
+        <label class="field-label">名单（每行一个，也可用逗号分隔）</label>
+        <textarea id="roll-list" rows="5" placeholder="张三&#10;李四&#10;王五"></textarea>
+        <div class="field-hint" id="roll-count">共 0 人 · 名单会自动保存在本机</div>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-func" hidden>
+      <div class="modal-head"><h3>函数图像</h3><button class="mini-close" data-close>×</button></div>
+      <div class="modal-body">
+        <label class="field-label">表达式（自变量 x，支持 sin/cos/sqrt/abs/log/ln/^）</label>
+        <input id="func-expr" value="sin(x)" spellcheck="false" />
+        <div class="func-presets" id="func-presets"></div>
+        <div class="field-hint">在页面上拖出图像区域即可绘制，坐标系将自动适配。</div>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-bg" hidden>
+      <div class="modal-head"><h3>页面背景</h3><button class="mini-close" data-close>×</button></div>
+      <div class="modal-body">
+        <div class="bg-grid" id="bg-grid"></div>
+        <div class="field-label">页面比例</div>
+        <div class="ratio-row" id="ratio-row">
+          <button data-ratio="16:9">16 : 9</button>
+          <button data-ratio="4:3">4 : 3</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-export" hidden>
+      <div class="modal-head"><h3>导出</h3><button class="mini-close" data-close>×</button></div>
+      <div class="modal-body export-list">
+        <button data-export="png-page">导出当前页 PNG</button>
+        <button data-export="png-all">导出全部页面 PNG</button>
+        <button data-export="pdf">打印 / 导出 PDF</button>
+        <button data-export="json">导出白板文件（.inkboard）</button>
+        <button data-export="svg">导出当前页 SVG（矢量）</button>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-shortcuts" hidden>
+      <div class="modal-head"><h3>操作说明</h3><button class="mini-close" data-close>×</button></div>
+      <div class="modal-body shortcuts">
+        <div class="sc-row"><kbd>P</kbd><span>钢笔</span><kbd>M</kbd><span>荧光笔</span></div>
+        <div class="sc-row"><kbd>E</kbd><span>橡皮</span><kbd>S</kbd><span>图形</span></div>
+        <div class="sc-row"><kbd>T</kbd><span>文本</span><kbd>V</kbd><span>选择</span></div>
+        <div class="sc-row"><kbd>空格</kbd><span>临时漫游</span><kbd>双指</kbd><span>缩放 / 平移</span></div>
+        <div class="sc-row"><kbd>Ctrl+Z</kbd><span>撤销</span><kbd>Ctrl+Y</kbd><span>重做</span></div>
+        <div class="sc-row"><kbd>Ctrl+D</kbd><span>复制选中</span><kbd>Del</kbd><span>删除选中</span></div>
+        <div class="sc-row"><kbd>← →</kbd><span>翻页</span><kbd>F</kbd><span>全屏授课</span></div>
+      </div>
+    </div>
+
+    <div class="modal" id="modal-help-import" hidden>
+      <div class="modal-head"><h3>导入 PDF</h3><button class="mini-close" data-close>×</button></div>
+      <div class="modal-body">
+        <div class="field-hint" id="pdf-hint">选择 PDF 后，每一页会转为一张白板页，可直接在上面书写批注。</div>
+        <button class="primary" id="btn-pick-pdf">选择 PDF 文件</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+  <div class="sel-bar" id="sel-bar" hidden>
+    <button data-sel="front">置顶</button>
+    <button data-sel="back">置底</button>
+    <button data-sel="dup">复制</button>
+    <button data-sel="del">删除</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="src/00-util.js"></script>
+<script src="src/10-geometry.js"></script>
+<script src="src/20-model.js"></script>
+<script src="src/30-render.js"></script>
+<script src="src/40-input.js"></script>
+<script src="src/50-tools.js"></script>
+<script src="src/60-ui.js"></script>
+<script src="src/65-ui-tools.js"></script>
+<script src="src/70-main.js"></script>
+</body>
+</html>
