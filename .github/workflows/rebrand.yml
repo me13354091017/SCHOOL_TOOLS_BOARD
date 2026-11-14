@@ -37,11 +37,14 @@ jobs:
       - name: Apply rebrand script
         run: python3 tools/rebrand-stb.py
 
+      - name: Install ImageMagick
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
+
       - name: Generate app icon
+        continue-on-error: true
         run: |
           mkdir -p wpf/Assets
-          convert -background none icons/icon.svg \
-            -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico
+          convert -background none icons/icon.svg -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico
 
       - name: Sanity build (web + wpf)
         run: |
