@@ -45,9 +45,9 @@ jobs:
       - name: Package assets
         run: |
           mkdir -p rel
-          cp pub-wpf/InkBoard.exe "rel/墨板InkBoard-WPF-${VERSION}.exe"
-          cp dist/inkboard-standalone.html "rel/墨板InkBoard-Web-${VERSION}.html"
-          cp LICENSE "rel/LICENSE.txt"
+          cp pub-wpf/InkBoard.exe "rel/InkBoard-WPF-${VERSION}.exe"
+          cp dist/inkboard-standalone.html "rel/InkBoard-Web-${VERSION}.html"
+          curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o "rel/LICENSE.txt" || cp LICENSE "rel/LICENSE.txt"
           ls -lh rel
 
       - name: Create GitHub Release

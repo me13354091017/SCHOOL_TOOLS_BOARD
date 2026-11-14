@@ -54,8 +54,8 @@ jobs:
           if [ -f pub-wpf/InkBoard.exe ]; then
             mkdir -p _site/download
             cp pub-wpf/InkBoard.exe _site/download/inkboard-wpf.exe
-            cp LICENSE _site/download/LICENSE.txt
-            ls -lh _site/download/inkboard-wpf.exe
+            curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o _site/download/LICENSE.txt || cp LICENSE _site/download/LICENSE.txt
+            ls -lh _site/download/inkboard-wpf.exe _site/download/LICENSE.txt
           fi
 
       - name: Upload Pages artifact
