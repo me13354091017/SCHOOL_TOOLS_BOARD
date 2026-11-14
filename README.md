@@ -1,26 +1,36 @@
-# 墨板 InkBoard
+# School Tools Board · 课堂白板（STB）
 
 面向**课堂触控一体机**的开源白板软件，同一套设计出两个版本：**Web 版**（零依赖、打开浏览器就能上课）与 **WPF 桌面版**（Windows 原生、绿色免安装）。
 
-> 血缘：核心笔迹工程思路源于作者上一个项目 [SCHOOL_TOOLS_PDF](https://github.com/me13354091017/SCHOOL_TOOLS_PDF)（WPF / .NET 10 / InkCanvasForPDF 衍生的 PDF 墨迹白板）。本项目把那套「**时间笔锋 + 手绘转标准图形 + 函数/坐标系图形**」的墨迹经验分别搬到浏览器与 WPF，几何算法全部自研重写。
+> 本应用是 [**SCHOOL_TOOLS**](https://me13354091017.github.io/school_tools/)（一个足以改变全校的教学工具索引）旗下的应用，图标沿用 SCHOOL_TOOLS 的「玻璃板叠层 + 暖色底条」视觉，字母标记为 **STB**。
+>
+> 血缘：核心笔迹工程思路源于作者上一个项目 [SCHOOL_TOOLS_PDF](https://github.com/me13354091017/SCHOOL_TOOLS_PDF)（WPF / .NET 10 / InkCanvasForPDF 派生的 PDF 墨迹白板）。本项目把那套「**时间笔锋 + 手绘转标准图形 + 函数/坐标系图形**」的墨迹经验分别搬到浏览器与 WPF，几何算法全部自研重写。
 
 ## 在线试用
 
 - 在线版： https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/
-- 离线单文件版：`dist/inkboard-standalone.html`（约 170 KB，双击即用，断网也能上课；由 CI 自动生成）
+- 离线单文件版：`dist/stb-standalone.html`（约 170 KB，双击即用，断网也能上课；由 CI 生成，图标已内联）
+- 母站： https://me13354091017.github.io/school_tools/
+
+## 下载
+
+| 版本 | 链接 |
+|---|---|
+| WPF 桌面版（68 MB 单文件，免装 .NET） | <https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/school-tools-board.exe> |
+| 全部版本与历史 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases> |
 
 ## 桌面版（WPF）
 
 - 源码：`wpf/`，原生 WPF（.NET 10），**不依赖 WebView2、不依赖第三方 PDF 库**（PDF 用系统自带 `Windows.Data.Pdf` 渲染）
-- 直接下载：<https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/inkboard-wpf.exe>（自包含单文件，约 71 MB，双击即用，无需装 .NET）
-- 编译产物：仓库 **Actions → WPF Build → 最新一次运行 → Artifacts → `InkBoard-wpf`**（需登录 GitHub 下载），解压后运行 `InkBoard.exe`
+- 产物程序名 `SchoolToolsBoard.exe`，窗口标题「School Tools Board · 课堂白板」，带 STB 应用图标
+- 编译产物：仓库 **Actions → WPF Build → 最新一次运行 → Artifacts → `SchoolToolsBoard-wpf`**（需登录 GitHub 下载）
 - 本地构建：`dotnet build wpf/InkBoard.Wpf.csproj -c Release`（需 .NET SDK 10 + Windows 10 1809 以上）
 - 能力：时间笔锋、荧光笔、按点切割橡皮、手绘转标准图形、7 种图形 + 坐标系 + 函数图像、文字、选择移动、激光笔、全屏授课、计时器、聚光灯、遮罩揭幕、多页管理、5 种背景、PDF 逐页导入、导出 PNG / 打印 PDF、`.json` 工程读写
 - 详情与已知限制见 [`wpf/README.md`](wpf/README.md)
 
 ## 为什么默认走 Web
 
-| 维度 | WPF（上游项目） | 墨板 InkBoard（Web 版） |
+| 维度 | WPF（上游项目） | School Tools Board（Web 版） |
 |---|---|---|
 | 部署 | 需安装 .exe、.NET 运行时、驱动 | 打开浏览器即可，可 PWA 离线 |
 | 平台 | Windows only | Windows / 鸿蒙 / Android 一体机通吃 |
@@ -79,11 +89,11 @@
 Web 版无需任何依赖（不需要 npm install）：
 
 ```bash
-node build.mjs                 # 生成 index.html（多文件版）+ dist/inkboard-standalone.html（单文件版）
-python3 -m http.server 8123    # 本地预览：http://localhost:8123
+node build.mjs                  # 生成 index.html（多文件版）+ dist/stb-standalone.html（单文件版）
+python3 -m http.server 8123     # 本地预览：http://localhost:8123
 ```
 
-`build.mjs` 只做一件事：把 `src/template.html` 里的 `src/*.js` 与两个 CSS 内联成一个 HTML（单文件版），同时写一份保留外链的多文件版。
+`build.mjs` 做两件事：把 `src/template.html` 里的 `src/*.js` 与两个 CSS 内联成一个 HTML（单文件版），同时写一份保留外链的多文件版；并对产物应用品牌补丁（标题 / 描述 / 品牌标 + STB 图标），单文件版还会把图标内联成 data URI。
 
 WPF 版：
 
@@ -101,13 +111,16 @@ dotnet build wpf/InkBoard.Wpf.csproj -c Release -p:EnableWindowsTargeting=true
 
 ```
 SCHOOL_TOOLS_BOARD/
-├─ build.mjs                 # 零依赖构建脚本
-├─ manifest.json / sw.js     # PWA：可安装、可离线
-├─ icons/icon.svg            # 矢量图标
+├─ build.mjs                 # 零依赖构建脚本（含品牌补丁）
+├─ VERSION                   # 版本号，改动它会触发 Release 流水线
+├─ RELEASE_NOTES.md          # 当前版本的发布说明（Release 正文）
+├─ manifest.json / sw.js     # PWA：可安装、可离线（short_name = STB）
+├─ icons/                    # STB 图标（icon.svg 矢量，字母为矢量路径）
 ├─ src/                      # Web 版前端（template.html / style*.css / 00~70*.js）
-├─ dist/inkboard-standalone.html   # CI 生成的离线单文件版
+├─ dist/stb-standalone.html  # CI 生成的离线单文件版
 ├─ wpf/                      # WPF 桌面版（.NET 10）
-│  ├─ InkBoard.Wpf.csproj
+│  ├─ InkBoard.Wpf.csproj    # 程序集名 SchoolToolsBoard
+│  ├─ Assets/app.ico         # 应用图标（由 icons/icon.svg 生成，CI 里做）
 │  ├─ App.xaml / App.xaml.cs      # 主题与资源（绿色 #0e9f76）
 │  ├─ MainWindow.xaml(.cs)        # 主窗口、工具条、页栏
 │  ├─ MainWindow.Files.cs         # 打开/保存/导出/PDF 导入
@@ -117,14 +130,15 @@ SCHOOL_TOOLS_BOARD/
 │  ├─ MainWindow.Text.cs          # 文字输入对话框
 │  └─ Core/                       # 模型、笔迹几何、橡皮切割、图形识别、双图层画板、绘制导出、PDF
 └─ .github/workflows/
-   ├─ pages.yml                # Web 版构建并发布 GitHub Pages
-   └─ wpf.yml                  # WPF 版在 windows-latest 上编译并上传产物
+   ├─ pages.yml                # 构建 Web + 交叉发布 WPF 并部署 GitHub Pages
+   ├─ wpf.yml                  # WPF 在 windows-latest 上编译并上传产物
+   └─ release.yml              # VERSION 变更即打 tag、建 Release、挂附件
 ```
 
 ## 在课堂一体机上用
 
-1. Web 版：用一体机浏览器打开在线版（或把 `inkboard-standalone.html` 拷到 U 盘里双击）；
-2. WPF 版：下载 <https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/inkboard-wpf.exe> 双击运行（Windows 10 1809 以上，无需装 .NET；也可在 Actions 产物里取 `InkBoard-wpf`）；
+1. Web 版：用一体机浏览器打开在线版（或把 `stb-standalone.html` 拷到 U 盘里双击）；
+2. WPF 版：下载 <https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/school-tools-board.exe> 双击运行（Windows 10 1809 以上，无需装 .NET；也可在 Actions 产物里取 `SchoolToolsBoard-wpf`）；
 3. 点右上角「全屏授课」进入沉浸模式（工具条变淡，顶栏自动隐藏）；
 4. 想离线常驻：浏览器菜单「添加到主屏幕」即可安装为 PWA。
 

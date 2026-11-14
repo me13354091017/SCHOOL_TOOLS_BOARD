@@ -1,0 +1,43 @@
+name: Fix release license
+
+# 一次性修复：把 Release 里的 LICENSE.txt 换成 GPL-3.0 完整原文
+# （gnu.org 拉取在本轮 CI 里失败，附件回退成了仓库里的简短许可声明）
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-release-license.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch GPL-3.0 full text
+        run: |
+          mkdir -p out
+          ok=0
+          for u in \
+            https://www.gnu.org/licenses/gpl-3.0.txt \
+            https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-only.txt \
+            https://raw.githubusercontent.com/spdx/license-list-data/main/text/GPL-3.0-or-later.txt
+          do
+            echo "try $u"
+            if curl -fsSL --max-time 40 "$u" -o out/LICENSE.txt; then ok=1; break; fi
+          done
+          if [ "$ok" != "1" ]; then echo "all mirrors failed"; exit 1; fi
+          wc -c out/LICENSE.txt
+          head -3 out/LICENSE.txt
+
+      - name: Re-upload asset to latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V=$(tr -d '\r\n ' < VERSION)
+          gh release upload "v$V" out/LICENSE.txt --clobber
+          gh release view "v$V" --json assets --jq '.assets[] | "\(.name) \(.size)"'
