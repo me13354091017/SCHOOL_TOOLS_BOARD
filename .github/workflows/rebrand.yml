@@ -1,0 +1,61 @@
+name: Rebrand to STB
+
+# 一次性迁移：把「墨板 InkBoard」统一为 School Tools Board（STB）。
+# 迁移完成后本文件会改为仅 workflow_dispatch，脚本保留在 tools/ 里备查。
+
+on:
+  push:
+    paths:
+      - 'tools/rebrand-stb.py'
+      - '.github/workflows/rebrand.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebrand
+  cancel-in-progress: false
+
+jobs:
+  rebrand:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Apply rebrand script
+        run: python3 tools/rebrand-stb.py
+
+      - name: Generate app icon
+        run: |
+          mkdir -p wpf/Assets
+          convert -background none icons/icon.svg \
+            -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico
+
+      - name: Sanity build (web + wpf)
+        run: |
+          node build.mjs
+          dotnet build wpf/InkBoard.Wpf.csproj -c Release -p:EnableWindowsTargeting=true
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "没有需要提交的改动"
+          else
+            git commit -m "chore(stb): 品牌统一为 School Tools Board（STB）课堂白板"
+            git push
+          fi
