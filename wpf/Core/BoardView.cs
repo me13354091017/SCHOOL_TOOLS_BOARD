@@ -394,7 +394,8 @@ namespace InkBoard
                 case ToolKind.Shape:
                     if (_cur != null)
                     {
-                        var w = Math.Abs(_cur.X2 - _cur.X1), h = Math.Abs(_cur.Y2 - _cur.Y1);
+                        double w = Math.Abs(_cur.X2 - _cur.X1);
+                        double h = Math.Abs(_cur.Y2 - _cur.Y1);
                         if (w > 4 || h > 4) Doc.Cur.Objects.Add(_cur);
                         _cur = null;
                         AfterEdit();

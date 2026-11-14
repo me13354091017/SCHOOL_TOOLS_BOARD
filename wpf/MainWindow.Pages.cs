@@ -1,11 +1,18 @@
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Media;
 
 namespace InkBoard
 {
     /// <summary>页面增删复制</summary>
     public partial class MainWindow
     {
+        static Brush FromHex(string hex)
+        {
+            try { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)); }
+            catch (System.Exception) { return Brushes.Black; }
+        }
+
         void AfterPageChange()
         {
             _board.InvalidateAll();
