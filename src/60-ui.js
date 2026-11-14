@@ -1,5 +1,5 @@
 /* ==========================================================================
- * 60-ui.js — 界面装配（上半）：工具栏 / 颜色 / 页面栏 / 顶栏 / 计时器 / 点名 / 文本 / 导出
+ * 60-ui.js — 界面装配：工具栏 / 页面栏 / 课堂工具 / 弹窗 / 文本编辑 / 导出
  * ========================================================================== */
 (function () {
   'use strict';
@@ -30,9 +30,6 @@
   }
 
   const UI = {
-    COLORS, MARKER_COLORS, WIDTHS, ERASERS, SHAPES, FUNC_PRESETS,
-    el, pick, pickAll, hexToRgba,
-
     init(app) {
       this.app = app;
       this.board = app.board;
@@ -186,7 +183,9 @@
       pickAll('.tool').forEach((b) => b.classList.toggle('active', b.dataset.tool === name));
       const app = el('app');
       app.dataset.tool = name;
+      // 切换到选择工具时，把形状/颜色浮层关掉
       this._closePops();
+      // 橡皮：显示粗细选择
       if (name === 'eraser') this._showEraserUI();
       if (name === 'pen' || name === 'marker') this._hideEraserUI();
     },
@@ -327,46 +326,6 @@
       for (const o of page.objects) this.board.drawObject(ctx, o);
       this.app.doc.pages[this.app.doc.current] = saved;
       ctx.restore();
-    },
-
-    /* ------------------------------ 弹窗 ------------------------------ */
-    _bindModals() {
-      pickAll('[data-close]').forEach((b) => { b.onclick = () => this.closeModals(); });
-      el('modal-layer').addEventListener('pointerdown', (e) => {
-        if (e.target === el('modal-layer')) this.closeModals();
-      });
-    },
-    openModal(id) {
-      el('modal-layer').hidden = false;
-      pickAll('.modal').forEach((m) => { m.hidden = m.id !== id; });
-    },
-    closeModals() {
-      el('modal-layer').hidden = true;
-      pickAll('.modal').forEach((m) => { m.hidden = true; });
-    },
-
-    toast(msg) {
-      const t = el('toast');
-      t.textContent = msg;
-      t.hidden = false;
-      clearTimeout(this._toastTimer);
-      this._toastTimer = setTimeout(() => { t.hidden = true; }, 1800);
-    },
-
-    onSelectionChange() {
-      if (!this.app) return;
-      const bar = el('sel-bar');
-      const app = this.app;
-      const has = app.selection.size > 0 && app.toolName === 'select';
-      bar.hidden = !has;
-      if (has) {
-        const b = app.selectionBounds();
-        if (b) {
-          const s = this.board.toScreen(b.x + b.w / 2, b.y);
-          bar.style.left = clamp(s.x, 220, window.innerWidth - 220) + 'px';
-          bar.style.bottom = clamp(window.innerHeight - s.y + 20, 96, window.innerHeight - 100) + 'px';
-        }
-      }
     },
   };
 
