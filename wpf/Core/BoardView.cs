@@ -174,7 +174,7 @@ namespace InkBoard
             e.Handled = true;
         }
 
-        protected override void OnStylusMove(StylusMoveEventArgs e)
+        protected override void OnStylusMove(StylusEventArgs e)
         {
             base.OnStylusMove(e);
             if (!_drawing && !_panning) return;
@@ -182,7 +182,7 @@ namespace InkBoard
             e.Handled = true;
         }
 
-        protected override void OnStylusUp(StylusUpEventArgs e)
+        protected override void OnStylusUp(StylusEventArgs e)
         {
             base.OnStylusUp(e);
             Release();
