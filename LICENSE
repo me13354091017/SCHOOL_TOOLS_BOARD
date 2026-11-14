@@ -1,0 +1,32 @@
+墨板 InkBoard (SCHOOL_TOOLS_BOARD)
+Copyright (C) 2026 me13354091017
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <https://www.gnu.org/licenses/>.
+
+SPDX-License-Identifier: GPL-3.0-or-later
+
+许可选择：GPL-3.0-or-later，与上游项目 SCHOOL_TOOLS_PDF 保持一致。
+
+完整许可原文（官方唯一权威版本）：
+https://www.gnu.org/licenses/gpl-3.0.txt
+https://www.gnu.org/licenses/gpl-3.0.en.html
+
+中文参考译本（非权威）：
+https://www.gnu.org/licenses/gpl-3.0-translations.html
+
+说明：为遵守托管平台对单文件体积的限制，完整的 GPLv3 正文未内联到本文件，
+以上链接为许可正文的唯一权威来源。分发本软件或其修改版时，请随附完整原文。
+
+源码仓库：https://github.com/me13354091017/SCHOOL_TOOLS_BOARD
+上游项目：https://github.com/me13354091017/SCHOOL_TOOLS_PDF

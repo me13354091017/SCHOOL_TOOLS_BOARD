@@ -1,0 +1,18 @@
+# 依赖与构建产物
+node_modules/
+package.json
+package-lock.json
+
+# 构建产物（由 `node build.mjs` 与 CI 生成）
+index.html
+dist/
+
+# 本地测试与素材
+test/
+docs/
+vendor/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+*.log
