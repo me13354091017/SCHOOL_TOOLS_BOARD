@@ -27,18 +27,31 @@ jobs:
       - name: Build web bundle
         run: node build.mjs
 
-      - name: Fetch ICC-CE based desktop package
+      - name: Fetch ICC-CE desktop package and installer
         run: |
-          # 桌面版（主应用）以 ICC-CE 源码为底座，在 fork 仓库里构建好并发 Release，这里直接取现成 zip
-          curl -fL --retry 3 --retry-delay 5 \
-            -o /tmp/stb-desktop.zip \
-            "https://github.com/me13354091017/community/releases/download/stb-latest/SchoolToolsBoard-STB-win-x64.zip"
-          ls -lh /tmp/stb-desktop.zip
+          # 桌面版（主应用）在 fork 仓库构建：zip 为主程序包，Setup exe 为 Inno Setup 安装包
+          api="https://api.github.com/repos/me13354091017/community/releases/tags/stb-latest"
+          assets=$(curl -fsSL "$api" | grep -o '"browser_download_url": *"[^"]*"' | cut -d'"' -f4)
+          echo "$assets"
+          zip_url=$(echo "$assets" | grep -i 'win-x64\.zip$' | head -1)
+          exe_url=$(echo "$assets" | grep -i 'Setup' | head -1)
+          if [ -z "$zip_url" ]; then echo "::error::desktop zip not found"; exit 1; fi
+          curl -fL --retry 3 --retry-delay 5 -o /tmp/stb-desktop.zip "$zip_url"
+          if [ -n "$exe_url" ]; then
+            curl -fL --retry 3 --retry-delay 5 -o /tmp/stb-setup.exe "$exe_url"
+          else
+            echo "::warning::installer not found in stb-latest, continue without it"
+          fi
+          ls -lh /tmp/stb-desktop.zip || true
+          ls -lh /tmp/stb-setup.exe || true
 
       - name: Package assets
         run: |
           mkdir -p rel
           cp /tmp/stb-desktop.zip "rel/SchoolToolsBoard-STB-Desktop-${VERSION}.zip"
+          if [ -s /tmp/stb-setup.exe ]; then
+            cp /tmp/stb-setup.exe "rel/SchoolToolsBoard-Setup-${VERSION}.exe"
+          fi
           cp dist/stb-standalone.html "rel/SchoolToolsBoard-Web-${VERSION}.html"
           curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o "rel/LICENSE.txt" || cp LICENSE "rel/LICENSE.txt"
           ls -lh rel
