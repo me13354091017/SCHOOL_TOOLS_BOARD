@@ -10,9 +10,9 @@
 
 | 版本 | 说明 | 链接 |
 |---|---|---|
-| **桌面版（主应用）** | ICC-CE 底座，含 PPT 放映批注 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
+| **桌面版（主应用）** | ICC-CE 底座，含 PPT 放映批注、板中板 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
 | **Windows 安装包（推荐）** | Inno Setup 安装向导：可选目录、建快捷方式、带卸载项 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
-| **Web 离线单文件** | `dist/stb-standalone.html`，约 170 KB，双击即用、断网也能上课 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
+| **Web 离线单文件** | `dist/stb-standalone.html`，约 170 KB、双击即用、断网也能上课 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
 | 全部版本与历史 | | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases> |
 
 - 在线版：<https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/>
@@ -28,10 +28,11 @@ fork 自 ICC-CE，保留其完整课堂能力，并把品牌换成 STB。它是�
 | 多页白板 + 时间机器 | 上百页滑页、无限步撤销/重做、页缩略图 |
 | 手势与笔压 | 双指缩放/旋转/平移，笔压参与笔宽，手掌防误触 |
 | 形状与学科工具 | 直线/矩形/椭圆/箭头/抛物线、坐标系与函数图像、计时器、聚光灯 |
+| **板中板**（希沃同款） | 浮动工具栏「板中板」一键呼出：白底黑笔、主板上居中、无边框置顶、可拖动可拉伸；自带多页与撤销；关闭时板书按屏幕位置贴回主白板并可 Ctrl+Z 撤销 |
 
 - 源码基座：<https://github.com/me13354091017/community>（默认分支 `net10`，GPL-3.0，上游 CJKmkp / ICC-CE）
-- **品牌化方式**：不改上游源码，全部改动在 CI 构建前打补丁——程序名 → `SchoolToolsBoard`、窗口标题 → 「SchoolToolsBoard · 课堂白板」、图标由 `stb/icon.svg` 现场生成。这样以后 `git pull` 跟上游升级永远不会冲突。
-- 构建：fork 仓库的 `stb-build.yml` 在 windows-latest 上跑「还原 → 生成图标 → 构建主工程 → 构建 PPT 加载项（自签证书签名）→ 打包 → 发布 `stb-latest`」，主仓库发布时直接取这个 zip。
+- **品牌化方式**：不改上游源码，全部改动在 CI 构建前打补丁——程序名 → `SchoolToolsBoard`、窗口标题 → 「SchoolToolsBoard · 课堂白板」、图标由 `stb/icon.svg` 现场生成，板中板与性能默认值由 `stb/apply-stb-patches.ps1` 打补丁。这样以后 `git pull` 跟上游升级永远不会冲突。
+- 构建：fork 仓库的 `stb-build.yml` 在 windows-latest 上跑「还原 → 品牌补丁 → 板中板/性能补丁 → 生成图标 → 构建主工程 → 构建 PPT 加载项（自签证书签名）→ 打包 → 发布 `stb-latest`」，主仓库发布时直接取这个 zip。
 - 产物：`SchoolToolsBoard-STB-Desktop-<版本>.zip`，解压运行 `SchoolToolsBoard.exe`（Windows 10 1809+ / 11 x64）。PPT 批注需本机装 PowerPoint。
 
 ## 配套 · Web 版
@@ -100,7 +101,7 @@ node build.mjs                  # 生成 index.html（多文件版）+ dist/stb-
 python3 -m http.server 8123     # 本地预览：http://localhost:8123
 ```
 
-`build.mjs` 只做一件事：把 `src/template.html` 里的 `src/*.js` 与两个 CSS 内联成一个 HTML（单文件版），同时写一份保留外链的多文件版；单文件版会把 STB 图标内联成 data URI。
+`build.mjs` 只做一件事：把 `src/template.html` 里的 `src/*.js` 与两个 CSS 内联成一个 HTML（单文件版），同时写一份保留外链的文件（多文件版）；单文件版会把 STB 图标内联成 data URI。
 
 桌面版（主应用）在 fork 仓库构建，不在本仓库：
 
@@ -137,7 +138,7 @@ SCHOOL_TOOLS_BOARD/
 
 ## 与希沃白板的差距（实话实说）
 
-已覆盖：笔迹、荧光笔、橡皮、图形/函数、多页板书、课堂工具（计时/点名/聚光灯/遮罩/放大镜/板中板/PDF 讲评）、导出；桌面版另有 **PPT 放映按页批注**、无限步时间机器、笔压手势、坐标系与函数图像等学科工具。
+已覆盖：笔迹、荧光笔、橡皮、图形/函数、多页板书、课堂工具（计时/点名/聚光灯/遮罩/放大镜/板中板/PDF 讲评）、导出；桌面版另有 **PPT 放映按页批注**、无限步时间机器、笔压手势、坐标系与函数图像等学科工具，以及**与希沃同形态的板中板（关闭即贴回主白板）**。
 
 **尚未覆盖**：云账号与课件库、协同备课、微课录制、课堂活动（分组竞赛/抢答器）、截图提问、与教材资源打通。这些都需要后端与内容生态，不是单仓库能完成的。
 
