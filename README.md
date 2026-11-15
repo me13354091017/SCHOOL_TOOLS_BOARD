@@ -1,6 +1,6 @@
 # School Tools Board · 课堂白板（STB）
 
-面向**课堂触控一体机**的开源白板软件，同一套设计出两个版本：**Web 版**（零依赖、打开浏览器就能上课）与 **WPF 桌面版**（Windows 原生、绿色免安装）。
+面向**课堂触控一体机**的开源白板软件，同一套设计出三个版本：**Web 版**（零依赖、打开浏览器就能上课）、**自研 WPF 桌面版**（Windows 原生、绿色免安装）、**ICC-CE 底座桌面版**（PPT 放映批注、多页白板 + 时间机器、笔压手势）。
 
 > 本应用是 [**SCHOOL_TOOLS**](https://me13354091017.github.io/school_tools/)（一个足以改变全校的教学工具索引）旗下的应用，图标沿用 SCHOOL_TOOLS 的「玻璃板叠层 + 暖色底条」视觉，字母标记为 **STB**。
 >
@@ -16,8 +16,24 @@
 
 | 版本 | 链接 |
 |---|---|
+| **桌面版 · ICC-CE 底座（PPT 批注 / 时间机器）** | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest/download/SchoolToolsBoard-STB-Desktop-1.1.1.zip> |
 | WPF 桌面版（68 MB 单文件，免装 .NET） | <https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/school-tools-board.exe> |
 | 全部版本与历史 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases> |
+
+## 桌面版 · ICC-CE 底座（推荐上课用）
+
+在 v1.1.1 并入开源项目 [InkCanvasForClass Community Edition（ICC-CE）](https://github.com/InkCanvasForClass/community) 的源码，fork 成 STB 桌面版。它是教室里最「抗用」的一套：
+
+| 能力 | 说明 |
+|---|---|
+| PPT 演示批注 | PowerPoint 放映中用笔写，按幻灯片逐页保存墨迹，翻页墨迹跟着走 |
+| 多页白板 + 时间机器 | 上百页滑页、无限步撤销/重做、页缩略图 |
+| 手势与笔压 | 双指缩放/旋转/平移，笔压参与笔宽，手掌防误触 |
+| 形状与学科工具 | 直线/矩形/椭圆/箭头/抛物线、坐标系与函数图像、计时器、聚光灯 |
+
+- 源码：<https://github.com/me13354091017/community>（默认分支 `net10`，GPL-3.0）
+- 品牌化：不改上游源码，CI 构建前打补丁（程序名 → `SchoolToolsBoard`、标题 → 「School Tools Board · 课堂白板」、图标用 `stb/icon.svg` 现场生成），跟上游升级永不冲突
+- 产物：`SchoolToolsBoard-STB-Desktop-1.1.1.zip`，解压运行 `SchoolToolsBoard.exe`（Windows 10 1809+ / 11 x64）
 
 ## 桌面版（WPF）
 
@@ -38,7 +54,7 @@
 | 升级 | 重新安装 | 刷新页面 |
 | 手写笔 | 需 WinRT 墨水栈 | Pointer Events + coalesced 事件，直取高频采样 |
 
-一体机的痛点不是“功能少”，而是“装不上、跑不动、一升级就崩”。所以默认版把“有没有”交给浏览器，把“卡不卡”交给分层画布与脏区重绘；需要纯原生手感或必须离线装机时，再用 `wpf/` 版本。
+一体机的痛点不是“功能少”，而是“装不上、跑不动、一升级就崩”。所以默认版把“有没有”交给浏览器，把“卡不卡”交给分层画布与脏区重绘；需要纯原生手感或必须离线装机时，再用桌面版。
 
 ## 核心能力
 
@@ -93,7 +109,7 @@ node build.mjs                  # 生成 index.html（多文件版）+ dist/stb-
 python3 -m http.server 8123     # 本地预览：http://localhost:8123
 ```
 
-`build.mjs` 做两件事：把 `src/template.html` 里的 `src/*.js` 与两个 CSS 内联成一个 HTML（单文件版），同时写一份保留外链的多文件版；并对产物应用品牌补丁（标题 / 描述 / 品牌标 + STB 图标），单文件版还会把图标内联成 data URI。
+`build.mjs` 只做一件事：把 `src/template.html` 里的 `src/*.js` 与两个 CSS 内联成一个 HTML（单文件版），同时写一份保留外链的多文件版；单文件版会把 STB 图标内联成 data URI。
 
 WPF 版：
 
@@ -111,16 +127,16 @@ dotnet build wpf/InkBoard.Wpf.csproj -c Release -p:EnableWindowsTargeting=true
 
 ```
 SCHOOL_TOOLS_BOARD/
-├─ build.mjs                 # 零依赖构建脚本（含品牌补丁）
+├─ build.mjs                 # 零依赖构建脚本
 ├─ VERSION                   # 版本号，改动它会触发 Release 流水线
 ├─ RELEASE_NOTES.md          # 当前版本的发布说明（Release 正文）
-├─ manifest.json / sw.js     # PWA：可安装、可离线（short_name = STB）
-├─ icons/                    # STB 图标（icon.svg 矢量，字母为矢量路径）
+├─ manifest.json / sw.js     # PWA：可安装、可离线
+├─ icons/                    # STB 图标（icon.svg 矢量 + 192/512/180/32 PNG）
 ├─ src/                      # Web 版前端（template.html / style*.css / 00~70*.js）
 ├─ dist/stb-standalone.html  # CI 生成的离线单文件版
 ├─ wpf/                      # WPF 桌面版（.NET 10）
 │  ├─ InkBoard.Wpf.csproj    # 程序集名 SchoolToolsBoard
-│  ├─ Assets/app.ico         # 应用图标（由 icons/icon.svg 生成，CI 里做）
+│  ├─ Assets/app.ico         # 应用图标（由 icons/icon.svg 生成）
 │  ├─ App.xaml / App.xaml.cs      # 主题与资源（绿色 #0e9f76）
 │  ├─ MainWindow.xaml(.cs)        # 主窗口、工具条、页栏
 │  ├─ MainWindow.Files.cs         # 打开/保存/导出/PDF 导入
@@ -132,21 +148,22 @@ SCHOOL_TOOLS_BOARD/
 └─ .github/workflows/
    ├─ pages.yml                # 构建 Web + 交叉发布 WPF 并部署 GitHub Pages
    ├─ wpf.yml                  # WPF 在 windows-latest 上编译并上传产物
-   └─ release.yml              # VERSION 变更即打 tag、建 Release、挂附件
+   └─ release.yml              # VERSION 变更即打 tag、建 Release、挂附件（含 ICC-CE 底座包）
 ```
 
 ## 在课堂一体机上用
 
 1. Web 版：用一体机浏览器打开在线版（或把 `stb-standalone.html` 拷到 U 盘里双击）；
-2. WPF 版：下载 <https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/school-tools-board.exe> 双击运行（Windows 10 1809 以上，无需装 .NET；也可在 Actions 产物里取 `SchoolToolsBoard-wpf`）；
-3. 点右上角「全屏授课」进入沉浸模式（工具条变淡，顶栏自动隐藏）；
-4. 想离线常驻：浏览器菜单「添加到主屏幕」即可安装为 PWA。
+2. ICC-CE 底座版（推荐上课用）：下载 `SchoolToolsBoard-STB-Desktop-1.1.1.zip` 解压，运行里面的 `SchoolToolsBoard.exe`（需要 Windows 10 1809 以上 + .NET 10 Desktop Runtime；PPT 批注需本机装 PowerPoint）；
+3. 自研 WPF 版：下载 <https://me13354091017.github.io/SCHOOL_TOOLS_BOARD/download/school-tools-board.exe> 双击运行（免装 .NET；也可在 Actions 产物里取 `SchoolToolsBoard-wpf`）；
+4. 点「全屏授课」进入沉浸模式（工具条变淡，顶栏自动隐藏）；
+5. 想离线常驻：浏览器菜单「添加到主屏幕」即可安装为 PWA。
 
 ## 与希沃白板的差距（实话实说）
 
-已覆盖：笔迹、荧光笔、橡皮、图形/函数、多页板书、课堂工具（计时/点名/聚光灯/遮罩/放大镜/板中板/PDF 讲评）、导出。
+已覆盖：笔迹、荧光笔、橡皮、图形/函数、多页板书、课堂工具（计时/点名/聚光灯/遮罩/放大镜/板中板/PDF 讲评）、导出；ICC-CE 底座版另有 PPT 放映按页批注、无限步时间机器、笔压手势、坐标系与函数图像等学科工具。
 
-**尚未覆盖**：云账号与课件库、协同备课、学科工具库（尺规、化学器皿、物理电路）、微课录制、课堂活动（分组竞赛/抢答器）、截图提问、与教材资源打通。这些都需要后端与内容生态，不是前端单仓库能完成的。
+**尚未覆盖**：云账号与课件库、协同备课、微课录制、课堂活动（分组竞赛/抢答器）、截图提问、与教材资源打通。这些都需要后端与内容生态，不是单仓库能完成的。
 
 ## 许可
 
