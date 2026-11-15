@@ -1,0 +1,60 @@
+name: README Installer Note
+
+# 一次性：在 README 下载表与上手步骤里补上 EXE 安装包说明
+
+on:
+  push:
+    paths:
+      - '.github/workflows/readme-installer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch README
+        run: |
+          python3 - << 'PY'
+          from pathlib import Path
+
+          p = Path('README.md')
+          s = p.read_text(encoding='utf-8')
+          changed = False
+
+          guard_row = '| **Windows 安装包** |'
+          if guard_row not in s:
+              anchor = '| **桌面版（主应用）** | ICC-CE 底座，含 PPT 放映批注 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |'
+              if anchor not in s:
+                  raise SystemExit('anchor row not found')
+              row = '| **Windows 安装包（推荐）** | Inno Setup 安装向导：可选目录、建快捷方式、带卸载项 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |'
+              s = s.replace(anchor, anchor + '\n' + row, 1)
+              changed = True
+
+          old_step = '1. **主应用**：下载 Release 里的 `SchoolToolsBoard-STB-Desktop-<版本>.zip`，解压后运行 `SchoolToolsBoard.exe`（Windows 10 1809 以上；PPT 批注需本机装 PowerPoint）。'
+          new_step = ('1. **主应用**：下载 Release 里的 `SchoolToolsBoard-Setup-<版本>.exe` 双击安装'
+                      '（想要免安装就取 `SchoolToolsBoard-STB-Desktop-<版本>.zip` 解压直接运行 `SchoolToolsBoard.exe`）'
+                      '（Windows 10 1809 以上；PPT 批注需本机装 PowerPoint）。')
+          if old_step in s:
+              s = s.replace(old_step, new_step, 1)
+              changed = True
+
+          if changed:
+              p.write_text(s, encoding='utf-8')
+              print('OK: README updated')
+          else:
+              print('SKIP: nothing to change')
+          PY
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if git diff --cached --quiet; then echo "no change"; exit 0; fi
+          git commit -m "docs: README 补上 EXE 安装包入口"
+          git push
