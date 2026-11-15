@@ -33,7 +33,6 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Install ImageMagick
-        continue-on-error: true
         run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
 
       - name: Generate app icon
@@ -53,11 +52,25 @@ jobs:
             -p:IncludeNativeLibrariesForSelfExtract=true \
             -o pub-wpf
 
+      - name: Fetch ICC-CE based desktop package
+        continue-on-error: true
+        run: |
+          # 桌面版以 ICC-CE 源码为底座，在 fork 仓库里构建并发 Release，这里直接取现成 zip
+          curl -fL --retry 3 --retry-delay 5 \
+            -o /tmp/stb-desktop.zip \
+            "https://github.com/me13354091017/community/releases/download/stb-latest/SchoolToolsBoard-STB-win-x64.zip"
+          ls -lh /tmp/stb-desktop.zip
+
       - name: Package assets
         run: |
           mkdir -p rel
           cp pub-wpf/SchoolToolsBoard.exe "rel/SchoolToolsBoard-WPF-${VERSION}.exe"
           cp dist/stb-standalone.html "rel/SchoolToolsBoard-Web-${VERSION}.html"
+          if [ -s /tmp/stb-desktop.zip ]; then
+            cp /tmp/stb-desktop.zip "rel/SchoolToolsBoard-STB-Desktop-${VERSION}.zip"
+          else
+            echo "::warning::ICC-CE 桌面版包未取到，本次 Release 不含该附件"
+          fi
           curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o "rel/LICENSE.txt" || cp LICENSE "rel/LICENSE.txt"
           ls -lh rel
 
