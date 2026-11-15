@@ -27,34 +27,9 @@ jobs:
       - name: Build web bundle
         run: node build.mjs
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Install ImageMagick
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq imagemagick
-
-      - name: Generate app icon
-        continue-on-error: true
-        run: |
-          mkdir -p wpf/Assets
-          convert -background none icons/icon.svg \
-            -define icon:auto-resize=256,128,64,48,32,16 wpf/Assets/app.ico
-
-      - name: Publish WPF (win-x64, self-contained)
-        run: |
-          dotnet publish wpf/InkBoard.Wpf.csproj -c Release -r win-x64 \
-            --self-contained true \
-            -p:EnableWindowsTargeting=true \
-            -p:PublishSingleFile=true \
-            -p:EnableCompressionInSingleFile=true \
-            -p:IncludeNativeLibrariesForSelfExtract=true \
-            -o pub-wpf
-
       - name: Fetch ICC-CE based desktop package
         run: |
-          # 桌面版以 ICC-CE 源码为底座，在 fork 仓库里构建并发 Release，这里取现成 zip（含 ppt-agent 插件）
+          # 桌面版（主应用）以 ICC-CE 源码为底座，在 fork 仓库里构建好并发 Release，这里直接取现成 zip
           curl -fL --retry 3 --retry-delay 5 \
             -o /tmp/stb-desktop.zip \
             "https://github.com/me13354091017/community/releases/download/stb-latest/SchoolToolsBoard-STB-win-x64.zip"
@@ -63,9 +38,8 @@ jobs:
       - name: Package assets
         run: |
           mkdir -p rel
-          cp pub-wpf/SchoolToolsBoard.exe "rel/SchoolToolsBoard-WPF-${VERSION}.exe"
-          cp dist/stb-standalone.html "rel/SchoolToolsBoard-Web-${VERSION}.html"
           cp /tmp/stb-desktop.zip "rel/SchoolToolsBoard-STB-Desktop-${VERSION}.zip"
+          cp dist/stb-standalone.html "rel/SchoolToolsBoard-Web-${VERSION}.html"
           curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o "rel/LICENSE.txt" || cp LICENSE "rel/LICENSE.txt"
           ls -lh rel
 
@@ -76,11 +50,24 @@ jobs:
           if gh release view "v${VERSION}" >/dev/null 2>&1; then
             gh release upload "v${VERSION}" rel/* --clobber
             gh release edit "v${VERSION}" \
-              --title "School Tools Board（STB）课堂白板 v${VERSION}" \
+              --title "SchoolToolsBoard（STB）课堂白板 v${VERSION}" \
               --notes-file RELEASE_NOTES.md
           else
             gh release create "v${VERSION}" rel/* \
-              --title "School Tools Board（STB）课堂白板 v${VERSION}" \
+              --title "SchoolToolsBoard（STB）课堂白板 v${VERSION}" \
               --notes-file RELEASE_NOTES.md \
               --target "$GITHUB_SHA"
           fi
+
+      - name: Drop legacy WPF asset
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 自研 WPF 版已下线，清掉历史 Release 里残留的 exe
+          for tag in $(gh release list --limit 100 --json tagName -q '.[].tagName'); do
+            for name in $(gh release view "$tag" --json assets -q '.assets[].name' | grep -i wpf); do
+              gh release delete-asset "$tag" "$name" -y || true
+              echo "removed $tag/$name"
+            done
+          done
