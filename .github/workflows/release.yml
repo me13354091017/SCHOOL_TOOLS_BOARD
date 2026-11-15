@@ -53,9 +53,8 @@ jobs:
             -o pub-wpf
 
       - name: Fetch ICC-CE based desktop package
-        continue-on-error: true
         run: |
-          # 桌面版以 ICC-CE 源码为底座，在 fork 仓库里构建并发 Release，这里直接取现成 zip
+          # 桌面版以 ICC-CE 源码为底座，在 fork 仓库里构建并发 Release，这里取现成 zip（含 ppt-agent 插件）
           curl -fL --retry 3 --retry-delay 5 \
             -o /tmp/stb-desktop.zip \
             "https://github.com/me13354091017/community/releases/download/stb-latest/SchoolToolsBoard-STB-win-x64.zip"
@@ -66,19 +65,22 @@ jobs:
           mkdir -p rel
           cp pub-wpf/SchoolToolsBoard.exe "rel/SchoolToolsBoard-WPF-${VERSION}.exe"
           cp dist/stb-standalone.html "rel/SchoolToolsBoard-Web-${VERSION}.html"
-          if [ -s /tmp/stb-desktop.zip ]; then
-            cp /tmp/stb-desktop.zip "rel/SchoolToolsBoard-STB-Desktop-${VERSION}.zip"
-          else
-            echo "::warning::ICC-CE 桌面版包未取到，本次 Release 不含该附件"
-          fi
+          cp /tmp/stb-desktop.zip "rel/SchoolToolsBoard-STB-Desktop-${VERSION}.zip"
           curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o "rel/LICENSE.txt" || cp LICENSE "rel/LICENSE.txt"
           ls -lh rel
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v${VERSION}" rel/* \
-            --title "School Tools Board（STB）课堂白板 v${VERSION}" \
-            --notes-file RELEASE_NOTES.md \
-            --target "$GITHUB_SHA"
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            gh release upload "v${VERSION}" rel/* --clobber
+            gh release edit "v${VERSION}" \
+              --title "School Tools Board（STB）课堂白板 v${VERSION}" \
+              --notes-file RELEASE_NOTES.md
+          else
+            gh release create "v${VERSION}" rel/* \
+              --title "School Tools Board（STB）课堂白板 v${VERSION}" \
+              --notes-file RELEASE_NOTES.md \
+              --target "$GITHUB_SHA"
+          fi
