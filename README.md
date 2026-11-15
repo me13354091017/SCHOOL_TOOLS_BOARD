@@ -11,6 +11,7 @@
 | 版本 | 说明 | 链接 |
 |---|---|---|
 | **桌面版（主应用）** | ICC-CE 底座，含 PPT 放映批注 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
+| **Windows 安装包（推荐）** | Inno Setup 安装向导：可选目录、建快捷方式、带卸载项 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
 | **Web 离线单文件** | `dist/stb-standalone.html`，约 170 KB，双击即用、断网也能上课 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
 | 全部版本与历史 | | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases> |
 
@@ -129,7 +130,7 @@ SCHOOL_TOOLS_BOARD/
 
 ## 在课堂一体机上用
 
-1. **主应用**：下载 Release 里的 `SchoolToolsBoard-STB-Desktop-<版本>.zip`，解压后运行 `SchoolToolsBoard.exe`（Windows 10 1809 以上；PPT 批注需本机装 PowerPoint）。
+1. **主应用**：下载 Release 里的 `SchoolToolsBoard-Setup-<版本>.exe` 双击安装（想要免安装就取 `SchoolToolsBoard-STB-Desktop-<版本>.zip` 解压直接运行 `SchoolToolsBoard.exe`）（Windows 10 1809 以上；PPT 批注需本机装 PowerPoint）。
 2. 装不了软件时：用一体机浏览器打开在线版，或把 `stb-standalone.html` 拷到 U 盘里双击。
 3. 点「全屏授课」进入沉浸模式。
 4. 想离线常驻：浏览器菜单「添加到主屏幕」即可安装为 PWA。
