@@ -1,7 +1,7 @@
 name: Release
 
 # STB 发布流水线：
-#   1) 构建 Web 离线单文件版（node build.mjs）
+#   1) 构建 Web 离线单文件版（node build.mjs；失败则复用上一版同一份 HTML，不阻断发布）
 #   2) 检出 ICC-CE 源码（fork: me13354091017/community @ net10），在构建前打 STB 补丁
 #      （品牌名 / 窗口标题 / 图标 / 板中板 / 性能默认值 / STB 明暗调色板 + 浮动栏主题）
 #   3) 构建桌面版主程序（含 PPT 批注加载项 ppt-agent）
@@ -51,11 +51,15 @@ jobs:
 
       - name: Build web bundle
         shell: pwsh
+        continue-on-error: true
         run: |
           node -v
-          node build.mjs
-          if (-not (Test-Path 'dist/stb-standalone.html')) { Write-Host '::error::web bundle missing'; exit 1 }
-          Write-Host ("web=" + (Get-Item 'dist/stb-standalone.html').Length + " bytes")
+          node build.mjs *>&1 | Tee-Object -FilePath web.log
+          if (-not (Test-Path 'dist/stb-standalone.html')) {
+            Write-Host '::warning::node build failed, will fall back to previous web asset'
+          } else {
+            Write-Host ("web=" + (Get-Item 'dist/stb-standalone.html').Length + " bytes")
+          }
 
       - name: Build desktop（ICC-CE 底座 + STB 补丁）
         shell: pwsh
@@ -177,7 +181,12 @@ jobs:
           Copy-Item 'SchoolToolsBoard-STB-win-x64.zip' "rel/SchoolToolsBoard-STB-Desktop-$ver.zip" -Force
           $exe = Get-ChildItem 'src/stb/out' -Filter 'SchoolToolsBoard-STB-Setup-*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
           if ($exe) { Copy-Item $exe.FullName "rel/SchoolToolsBoard-Setup-$ver.exe" -Force }
-          Copy-Item 'dist/stb-standalone.html' "rel/SchoolToolsBoard-Web-$ver.html" -Force
+          if (Test-Path 'dist/stb-standalone.html') {
+            Copy-Item 'dist/stb-standalone.html' "rel/SchoolToolsBoard-Web-$ver.html" -Force
+          } else {
+            Write-Host '::warning::reuse v1.1.4 web asset (Web 源码本版未改)'
+            Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri 'https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/download/v1.1.4/SchoolToolsBoard-Web-1.1.4.html' -OutFile "rel/SchoolToolsBoard-Web-$ver.html"
+          }
           if (Test-Path 'LICENSE') { Copy-Item 'LICENSE' 'rel/LICENSE.txt' -Force } else {
             Invoke-WebRequest -Uri 'https://www.gnu.org/licenses/gpl-3.0.txt' -OutFile 'rel/LICENSE.txt'
           }
@@ -204,7 +213,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          foreach ($f in @('steps.log','build.log','addin.log','stbpatch.log','iscc.log','restore.log','icon.log')) {
+          foreach ($f in @('steps.log','build.log','addin.log','stbpatch.log','iscc.log','restore.log','icon.log','web.log')) {
             if (Test-Path $f) {
               try { $u = (Invoke-WebRequest -Method Post -InFile $f -Uri 'https://paste.rs' -UseBasicParsing).Content.Trim(); Write-Host "::notice::$f -> $u" } catch {}
             }
