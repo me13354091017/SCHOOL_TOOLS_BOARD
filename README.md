@@ -1,5 +1,6 @@
 # SchoolToolsBoard（STB）· 课堂白板
-0f9面向**课堂触控一体机**的开源白板软件。**主应用程序 = 桌面版**，自 v1.0.0.0 起以开源项目 [Ink Canvas Plus（IC+）](https://github.com/clover-tree/Ink-Canvas-Plus) 为底座重构；早期 v1.1.x 的 ICC-CE 版本已归档保留；另有配套的 **Web 版**（零依赖、打开浏览器就能上课）。
+
+面向**课堂触控一体机**的开源白板软件。**主应用程序 = 桌面版**，自 v1.0.0.0 起以开源项目 [Ink Canvas Plus（IC+）](https://github.com/clover-tree/Ink-Canvas-Plus) 为底座重构；早期 v1.1.x 的 ICC-CE 版本已归档保留；另有配套的 **Web 版**（零依赖、打开浏览器就能上课）。
 
 > 本应用是 [**SCHOOL_TOOLS**](https://me13354091017.github.io/school_tools/)（一个足以改变全校的教学工具索引）旗下的应用，图标沿用 SCHOOL_TOOLS 的「玻璃板叠层 + 暖色底条」视觉，字母标记为 **STB**。
 >
@@ -111,7 +112,7 @@ SCHOOL_TOOLS_BOARD/
 
 ## 在课堂一体机上用
 
-1. 下载 Release 里的 `SchoolToolsBoard-Setup-<版本>.exe` 双击安装（免安装恸 `SchoolToolsBoard-Plus-Desktop-<版本>.zip`，解压后运行 `SchoolToolsBoard.exe`）。Windows 10 1903+；PPT 批注需本机装 PowerPoint。
+1. 下载 Release 里的 `SchoolToolsBoard-Setup-<版本>.exe` 双击安装（免安装取 `SchoolToolsBoard-Plus-Desktop-<版本>.zip`，解压后运行 `SchoolToolsBoard.exe`）。Windows 10 1903+；PPT 批注需本机装 PowerPoint。
 2. 装不了软件时：用一体机浏览器打开在线版，或把 `stb-standalone.html` 拷到 U 盘里双击。
 3. 点「全屏授课」进入沉浸模式。
 4. 想离线常驻：浏览器菜单「添加到主屏幕」即可安装为 PWA。
