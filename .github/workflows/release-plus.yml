@@ -1,4 +1,4 @@
-name: Release Plus（IC+ 底座）
+name: Release Plus
 
 # STB Plus 发布线：桌面底座从 ICC-CE 换成 Ink Canvas Plus（clover-tree/Ink-Canvas-Plus @ master）。
 # 版本全面重置为 1.0.0.0，作为 ICC-CE 版之后的正式主应用。
@@ -23,10 +23,10 @@ jobs:
   release:
     runs-on: windows-latest
     steps:
-      - name: Checkout（主仓库）
+      - name: Checkout main repo
         uses: actions/checkout@v4
 
-      - name: Checkout IC+ 源码
+      - name: Checkout IC+ source
         uses: actions/checkout@v4
         with:
           repository: clover-tree/Ink-Canvas-Plus
@@ -74,8 +74,9 @@ jobs:
         working-directory: plus-src
         shell: pwsh
         run: |
-          msbuild "Ink Canvas.sln" -t:restore /p:GitFlow="Github Action" /verbosity:minimal *>&1 | Tee-Object -FilePath ../restore-plus.log
-          msbuild "Ink Canvas.sln" -target:"InkCanvasPlus" /p:Configuration=Release /p:Platform="Any CPU" /p:GitFlow="Github Action" /verbosity:minimal *>&1 | Tee-Object -FilePath ../build-plus.log
+          msbuild "Ink Canvas.sln" -t:restore /p:GitFlow="Github Action" /verbosity:minimal
+          if ($LASTEXITCODE -ne 0) { throw "restore failed ($LASTEXITCODE)" }
+          msbuild "Ink Canvas.sln" -target:"InkCanvasPlus" /p:Configuration=Release /p:Platform="Any CPU" /p:GitFlow="Github Action" /verbosity:minimal
           if ($LASTEXITCODE -ne 0) { throw "msbuild failed ($LASTEXITCODE)" }
 
       - name: Package desktop
@@ -105,16 +106,16 @@ jobs:
         run: |
           $ver = (Get-Content VERSION_PLUS -Raw).Trim()
           $base = "https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/download/v$ver"
-          $xml = @"
-<?xml version=""1.0"" encoding=""UTF-8""?>
-<item>
-  <version>$ver</version>
-  <url>$base/SchoolToolsBoard-Setup-$ver.exe</url>
-  <changelog>https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/tag/v$ver</changelog>
-  <mandatory>false</mandatory>
-</item>
-"@
-          [IO.File]::WriteAllText((Join-Path (Get-Location) 'version.xml'), $xml, (New-Object System.Text.UTF8Encoding($false)))
+          $lines = @(
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            '<item>',
+            "  <version>$ver</version>",
+            "  <url>$base/SchoolToolsBoard-Setup-$ver.exe</url>",
+            "  <changelog>https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/tag/v$ver</changelog>",
+            '  <mandatory>false</mandatory>',
+            '</item>'
+          )
+          [IO.File]::WriteAllText((Join-Path (Get-Location) 'version.xml'), ($lines -join "`n"), (New-Object System.Text.UTF8Encoding($false)))
           Get-Content 'version.xml'
 
       - name: Package assets
@@ -136,7 +137,7 @@ jobs:
         run: |
           $ver = (Get-Content VERSION_PLUS -Raw).Trim()
           $tag = "v$ver"
-          $title = "SchoolToolsBoard（STB）课堂白板 v$ver — 基于 Ink Canvas Plus"
+          $title = "SchoolToolsBoard (STB) v$ver - based on Ink Canvas Plus"
           gh release view $tag *>&1 | Out-Null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag rel/* --clobber
@@ -150,9 +151,5 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          foreach ($f in @('restore-plus.log','build-plus.log','iscc-plus.log')) {
-            if (Test-Path $f) {
-              try { $u = (Invoke-WebRequest -Method Post -InFile $f -Uri 'https://paste.rs' -UseBasicParsing).Content.Trim(); Write-Host "::notice::$f -> $u" } catch {}
-            }
-          }
+          Write-Host 'diag: build finished'
           exit 0
