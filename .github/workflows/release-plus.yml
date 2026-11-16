@@ -64,6 +64,7 @@ jobs:
           try { choco install imagemagick -y --no-progress *>&1 | Out-Null } catch { Write-Host "choco fail: $_" }
           if (Get-Command magick -ErrorAction SilentlyContinue) {
             magick -background none 'icons/icon.svg' -define icon:auto-resize=256,128,64,48,32,16 'plus-src/Ink Canvas/Resources/InkCanvas.ico'
+            magick -background none 'icons/icon.svg' -resize 256x256 'plus-src/Ink Canvas/Resources/InkCanvas.png'
           } else {
             Write-Host '::warning::magick missing, keep upstream icon'
           }
@@ -99,6 +100,23 @@ jobs:
           if (-not $exe) { throw 'installer not produced' }
           Write-Host ("setup=" + $exe.FullName + " " + $exe.Length + " bytes")
 
+      - name: Generate update manifest
+        shell: pwsh
+        run: |
+          $ver = (Get-Content VERSION_PLUS -Raw).Trim()
+          $base = "https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/download/v$ver"
+          $xml = @"
+<?xml version=""1.0"" encoding=""UTF-8""?>
+<item>
+  <version>$ver</version>
+  <url>$base/SchoolToolsBoard-Setup-$ver.exe</url>
+  <changelog>https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/tag/v$ver</changelog>
+  <mandatory>false</mandatory>
+</item>
+"@
+          [IO.File]::WriteAllText((Join-Path (Get-Location) 'version.xml'), $xml, (New-Object System.Text.UTF8Encoding($false)))
+          Get-Content 'version.xml'
+
       - name: Package assets
         shell: pwsh
         run: |
@@ -107,6 +125,7 @@ jobs:
           Copy-Item 'SchoolToolsBoard-Plus-win.zip' "rel/SchoolToolsBoard-Plus-Desktop-$ver.zip" -Force
           $exe = Get-ChildItem 'plus-src/packaging/output' -Filter 'SchoolToolsBoard-Setup-*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
           Copy-Item $exe.FullName "rel/SchoolToolsBoard-Setup-$ver.exe" -Force
+          Copy-Item 'version.xml' 'rel/version.xml' -Force
           Copy-Item 'plus-src/LICENSE' 'rel/LICENSE.txt' -Force
           Get-ChildItem 'rel' | ForEach-Object { Write-Host "$($_.Name) $($_.Length) bytes" }
 
