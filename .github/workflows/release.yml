@@ -15,6 +15,7 @@ on:
     paths:
       - 'VERSION'
       - '.github/workflows/release.yml'
+      - 'build.mjs'
   workflow_dispatch:
 
 permissions:
@@ -51,6 +52,7 @@ jobs:
       - name: Build web bundle
         shell: pwsh
         run: |
+          node -v
           node build.mjs
           if (-not (Test-Path 'dist/stb-standalone.html')) { Write-Host '::error::web bundle missing'; exit 1 }
           Write-Host ("web=" + (Get-Item 'dist/stb-standalone.html').Length + " bytes")
