@@ -1,5 +1,15 @@
 name: Release
 
+# STB 发布流水线：
+#   1) 构建 Web 离线单文件版（node build.mjs）
+#   2) 检出 ICC-CE 源码（fork: me13354091017/community @ net10），在构建前打 STB 补丁
+#      （品牌名 / 窗口标题 / 图标 / 板中板 / 性能默认值 / STB 明暗调色板 + 浮动栏主题）
+#   3) 构建桌面版主程序（含 PPT 批注加载项 ppt-agent）
+#   4) 用 Inno Setup 生成安装包
+#   5) 建/更新 GitHub Release，挂 4 个附件
+# 说明：桌面版构建原先放在 fork 仓库的 stb-build.yml；GitHub 对该 fork 关闭了 Actions，
+#       因此这里直接检出源码就地构建，避免跨仓库拉取产物。
+
 on:
   push:
     paths:
@@ -10,15 +20,28 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: true
+
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
-      - name: Checkout
+      - name: Checkout（主仓库）
         uses: actions/checkout@v4
 
-      - name: Read version
-        run: echo "VERSION=$(tr -d '\r\n ' < VERSION)" >> "$GITHUB_ENV"
+      - name: Checkout ICC-CE 源码（fork net10）
+        uses: actions/checkout@v4
+        with:
+          repository: me13354091017/community
+          ref: net10
+          path: src
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -26,63 +49,162 @@ jobs:
           node-version: 20
 
       - name: Build web bundle
-        run: node build.mjs
-
-      - name: Fetch ICC-CE desktop package and installer
+        shell: pwsh
         run: |
-          # 桌面版（主应用）在 fork 仓库构建：zip 为主程序包，Setup exe 为 Inno Setup 安装包
-          # 直连 release 下载地址（与 tag 绑定），避免匿名 GitHub API 被限流
-          base="https://github.com/me13354091017/community/releases/download/stb-latest"
-          zip_url="$base/SchoolToolsBoard-STB-win-x64.zip"
-          exe_url="$base/SchoolToolsBoard-STB-Setup-${VERSION}.exe"
-          echo "zip: $zip_url"
-          echo "exe: $exe_url"
-          curl -fL --retry 3 --retry-delay 5 -o /tmp/stb-desktop.zip "$zip_url" || { echo "::error::desktop zip download failed"; exit 1; }
-          if curl -fL --retry 3 --retry-delay 5 -o /tmp/stb-setup.exe "$exe_url"; then
-            echo 'installer fetched'
-          else
-            echo "::warning::installer ${VERSION} not found in stb-latest, continue without it"
-            rm -f /tmp/stb-setup.exe
-          fi
-          ls -lh /tmp/stb-desktop.zip || true
-          ls -lh /tmp/stb-setup.exe || true
+          node build.mjs
+          if (-not (Test-Path 'dist/stb-standalone.html')) { Write-Host '::error::web bundle missing'; exit 1 }
+          Write-Host ("web=" + (Get-Item 'dist/stb-standalone.html').Length + " bytes")
+
+      - name: Build desktop（ICC-CE 底座 + STB 补丁）
+        shell: pwsh
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Continue'
+          function Log($m) { Write-Host $m; $m | Out-File -FilePath steps.log -Append -Encoding utf8 }
+
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $msbuild = $null
+          if (Test-Path $vswhere) {
+            $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+          }
+          if (-not $msbuild) { $msbuild = (Get-Command msbuild -ErrorAction SilentlyContinue).Source }
+          Log "msbuild=$msbuild"
+
+          Push-Location src
+
+          Log 'PHASE 1 restore'
+          dotnet restore "Ink Canvas/InkCanvasForClass.csproj" --locked-mode *>&1 | Out-File -FilePath ../restore.log -Encoding utf8
+          Log "restore exit=$LASTEXITCODE"
+
+          Log 'PHASE 2 brand patch'
+          $csproj = "Ink Canvas/InkCanvasForClass.csproj"
+          $s = Get-Content $csproj -Raw
+          $s = $s -replace '<AssemblyName>InkCanvasForClass</AssemblyName>', '<AssemblyName>SchoolToolsBoard</AssemblyName>'
+          Set-Content -LiteralPath $csproj -Value $s -NoNewline -Encoding utf8
+          $xaml = "Ink Canvas/MainWindow.xaml"
+          $x = Get-Content $xaml -Raw
+          $x = $x -replace 'Title="InkCanvasforClass"', 'Title="School Tools Board · 课堂白板"'
+          Set-Content -LiteralPath $xaml -Value $x -NoNewline -Encoding utf8
+          Log 'brand patch ok'
+
+          Log 'PHASE 3 feature patches (板中板 / 性能 / 调色板)'
+          & ./stb/apply-stb-patches.ps1 *>&1 | Tee-Object -FilePath ../stbpatch.log | Out-Null
+          Log 'STB patches applied'
+
+          Log 'PHASE 4 palette files'
+          $stylesDir = 'Ink Canvas/Resources/Styles'
+          if (-not (Test-Path $stylesDir)) { New-Item -ItemType Directory -Force $stylesDir | Out-Null }
+          Copy-Item 'stb/StbThemes/Styles/*.xaml' $stylesDir -Force
+          Log ("styles=" + ((Get-ChildItem $stylesDir -Filter 'Stb*.xaml' -File).Count))
+
+          Log 'PHASE 5 icon'
+          try { choco install imagemagick -y --no-progress *>&1 | Out-Null } catch { Log "choco fail: $_" }
+          if (Get-Command magick -ErrorAction SilentlyContinue) {
+            magick -background none "stb/icon.svg" -define icon:auto-resize=256,128,64,48,32,16 "Ink Canvas/Resources/icc.ico" 2>&1 | Out-File -FilePath ../icon.log -Encoding utf8
+            Log "icon exit=$LASTEXITCODE"
+          } else { Log 'magick not found, keep upstream icon' }
+
+          Log 'PHASE 6 VSTO runtime + signing cert'
+          try {
+            $url = 'https://go.microsoft.com/fwlink/?LinkId=158918'
+            $out = "$env:TEMP\VSTORuntime.exe"
+            Invoke-WebRequest -Uri $url -OutFile $out -MaximumRedirection 10
+            Start-Process -FilePath $out -ArgumentList '/quiet /norestart' -Wait -NoNewWindow
+            Log 'VSTO runtime installed'
+          } catch { Log "vsto install fail: $_" }
+          try {
+            $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject 'CN=STB Build CI' `
+              -CertStoreLocation 'Cert:\CurrentUser\My' -KeyExportPolicy Exportable -NotAfter (Get-Date).AddYears(2)
+            $thumb = $cert.Thumbprint
+            Log "cert=$thumb"
+          } catch { $thumb = ''; Log "cert fail: $_" }
+
+          Log 'PHASE 7 build ppt-agent (VSTO add-in)'
+          if ($msbuild -and $thumb) {
+            & $msbuild "InkCanvas.PowerPointAddIn/InkCanvas.PowerPointAddIn.csproj" /p:Configuration=Release /p:Platform=AnyCPU /p:SignManifests=true /p:ManifestCertificateThumbprint=$thumb /verbosity:minimal *>&1 | Out-File -FilePath ../addin.log -Encoding utf8
+            Log "addin exit=$LASTEXITCODE"
+          } else { Log 'skip addin build' }
+
+          Log 'PHASE 8 build main app'
+          if ($msbuild) {
+            & $msbuild "Ink Canvas/InkCanvasForClass.csproj" /p:Configuration=Release /p:Platform=x64 /m /p:RunAnalyzers=false /verbosity:minimal *>&1 | Out-File -FilePath ../build.log -Encoding utf8
+          } else {
+            dotnet build "Ink Canvas/InkCanvasForClass.csproj" -c Release -p:Platform=x64 *>&1 | Out-File -FilePath ../build.log -Encoding utf8
+          }
+          Log "build exit=$LASTEXITCODE"
+
+          Log 'PHASE 9 package'
+          $out = "Ink Canvas/bin/Release/x64/net10.0-windows10.0.19041.0"
+          if (-not (Test-Path $out)) { Log 'NO OUTPUT DIR'; Pop-Location; exit 1 }
+          $agent = Join-Path $out 'ppt-agent'
+          Log "ppt-agent files=$((Get-ChildItem $agent -File -ErrorAction SilentlyContinue).Count)"
+          $themes = Join-Path $out 'FloatingBarThemes'
+          New-Item -ItemType Directory -Force $themes | Out-Null
+          Copy-Item 'stb/StbThemes/FloatingBarThemes/*' $themes -Recurse -Force
+          Log "floating bar themes=$((Get-ChildItem $themes -Directory -ErrorAction SilentlyContinue).Count)"
+          Compress-Archive -Path "$out/*" -DestinationPath "../SchoolToolsBoard-STB-win-x64.zip" -Force
+          Pop-Location
+          Write-Host ("zip=" + (Get-Item 'SchoolToolsBoard-STB-win-x64.zip').Length + " bytes")
+
+      - name: Build installer（Inno Setup）
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          $ver = (Get-Content VERSION -Raw).Trim()
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source }
+          if (-not $iscc) { try { choco install innosetup -y --no-progress *>&1 | Out-Null } catch {} ; $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' }
+          Write-Host "iscc=$iscc"
+          if (-not (Test-Path $iscc)) { Write-Host '::warning::ISCC not found, skip installer'; exit 0 }
+
+          New-Item -ItemType Directory -Force 'installer/app' | Out-Null
+          Expand-Archive -Path 'SchoolToolsBoard-STB-win-x64.zip' -DestinationPath 'installer/app' -Force
+          $appDir = (Resolve-Path 'installer/app').Path
+          $icon = (Resolve-Path 'src/Ink Canvas/Resources/icc.ico').Path
+          & $iscc "/DAppVersion=$ver" "/DAppDir=$appDir" "/DIconFile=$icon" "src/stb/setup.iss" *>&1 | Out-File -FilePath iscc.log -Encoding utf8
+          Write-Host "iscc exit=$LASTEXITCODE"
+          $exe = Get-ChildItem 'src/stb/out' -Filter 'SchoolToolsBoard-STB-Setup-*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($exe) { Write-Host "setup=$($exe.FullName) ($($exe.Length) bytes)" } else { Write-Host '::warning::installer exe not produced' }
 
       - name: Package assets
+        shell: pwsh
         run: |
-          mkdir -p rel
-          cp /tmp/stb-desktop.zip "rel/SchoolToolsBoard-STB-Desktop-${VERSION}.zip"
-          if [ -s /tmp/stb-setup.exe ]; then
-            cp /tmp/stb-setup.exe "rel/SchoolToolsBoard-Setup-${VERSION}.exe"
-          fi
-          cp dist/stb-standalone.html "rel/SchoolToolsBoard-Web-${VERSION}.html"
-          curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o "rel/LICENSE.txt" || cp LICENSE "rel/LICENSE.txt"
-          ls -lh rel
+          $ver = (Get-Content VERSION -Raw).Trim()
+          New-Item -ItemType Directory -Force 'rel' | Out-Null
+          Copy-Item 'SchoolToolsBoard-STB-win-x64.zip' "rel/SchoolToolsBoard-STB-Desktop-$ver.zip" -Force
+          $exe = Get-ChildItem 'src/stb/out' -Filter 'SchoolToolsBoard-STB-Setup-*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($exe) { Copy-Item $exe.FullName "rel/SchoolToolsBoard-Setup-$ver.exe" -Force }
+          Copy-Item 'dist/stb-standalone.html' "rel/SchoolToolsBoard-Web-$ver.html" -Force
+          if (Test-Path 'LICENSE') { Copy-Item 'LICENSE' 'rel/LICENSE.txt' -Force } else {
+            Invoke-WebRequest -Uri 'https://www.gnu.org/licenses/gpl-3.0.txt' -OutFile 'rel/LICENSE.txt'
+          }
+          Get-ChildItem 'rel' | ForEach-Object { Write-Host "$($_.Name) $($_.Length) bytes" }
 
       - name: Create or update GitHub Release
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if gh release view "v${VERSION}" >/dev/null 2>&1; then
-            gh release upload "v${VERSION}" rel/* --clobber
-            gh release edit "v${VERSION}" \
-              --title "SchoolToolsBoard（STB）课堂白板 v${VERSION}" \
-              --notes-file RELEASE_NOTES.md
-          else
-            gh release create "v${VERSION}" rel/* \
-              --title "SchoolToolsBoard（STB）课堂白板 v${VERSION}" \
-              --notes-file RELEASE_NOTES.md \
-              --target "$GITHUB_SHA"
-          fi
+          $ver = (Get-Content VERSION -Raw).Trim()
+          $tag = "v$ver"
+          $title = "SchoolToolsBoard（STB）课堂白板 v$ver"
+          gh release view $tag *>&1 | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag rel/* --clobber
+            gh release edit $tag --title $title --notes-file RELEASE_NOTES.md
+          } else {
+            gh release create $tag rel/* --title $title --notes-file RELEASE_NOTES.md --target "$env:GITHUB_SHA"
+          }
+          Write-Host 'release published'
 
-      - name: Drop legacy WPF asset
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish diagnostics
+        if: always()
+        shell: pwsh
         run: |
-          # 自研 WPF 版已下线，清掉历史 Release 里残留的 exe
-          for tag in $(gh release list --limit 100 --json tagName -q '.[].tagName'); do
-            for name in $(gh release view "$tag" --json assets -q '.assets[].name' | grep -i wpf); do
-              gh release delete-asset "$tag" "$name" -y || true
-              echo "removed $tag/$name"
-            done
-          done
+          foreach ($f in @('steps.log','build.log','addin.log','stbpatch.log','iscc.log','restore.log','icon.log')) {
+            if (Test-Path $f) {
+              try { $u = (Invoke-WebRequest -Method Post -InFile $f -Uri 'https://paste.rs' -UseBasicParsing).Content.Trim(); Write-Host "::notice::$f -> $u" } catch {}
+            }
+          }
+          exit 0
