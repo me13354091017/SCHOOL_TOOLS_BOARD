@@ -1,0 +1,139 @@
+name: Release Plus（IC+ 底座）
+
+# STB Plus 发布线：桌面底座从 ICC-CE 换成 Ink Canvas Plus（clover-tree/Ink-Canvas-Plus @ master）。
+# 版本全面重置为 1.0.0.0，作为 ICC-CE 版之后的正式主应用。
+# 上游自带构建配方（.github/workflows/main.yml）：nuget restore + msbuild，这里照搬并追加 STB 补丁与安装包。
+
+on:
+  push:
+    paths:
+      - 'VERSION_PLUS'
+      - '.github/workflows/release-plus.yml'
+      - 'stb-plus/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-plus
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout（主仓库）
+        uses: actions/checkout@v4
+
+      - name: Checkout IC+ 源码
+        uses: actions/checkout@v4
+        with:
+          repository: clover-tree/Ink-Canvas-Plus
+          ref: master
+          path: plus-src
+
+      - name: Setup .NET 6
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+        with:
+          nuget-version: '5.x'
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: NuGet restore
+        working-directory: plus-src
+        shell: pwsh
+        run: nuget restore "Ink Canvas.sln"
+
+      - name: Apply STB patches
+        shell: pwsh
+        run: |
+          $ver = (Get-Content VERSION_PLUS -Raw).Trim()
+          Write-Host "version=$ver"
+          ./stb-plus/apply-stb-plus-patches.ps1 -Root plus-src -Version "$ver"
+
+      - name: Build icon
+        shell: pwsh
+        run: |
+          try { choco install imagemagick -y --no-progress *>&1 | Out-Null } catch { Write-Host "choco fail: $_" }
+          if (Get-Command magick -ErrorAction SilentlyContinue) {
+            magick -background none 'icons/icon.svg' -define icon:auto-resize=256,128,64,48,32,16 'plus-src/Ink Canvas/Resources/InkCanvas.ico'
+          } else {
+            Write-Host '::warning::magick missing, keep upstream icon'
+          }
+          Write-Host ("ico=" + (Get-Item 'plus-src/Ink Canvas/Resources/InkCanvas.ico').Length)
+
+      - name: Build solution
+        working-directory: plus-src
+        shell: pwsh
+        run: |
+          msbuild "Ink Canvas.sln" -t:restore /p:GitFlow="Github Action" /verbosity:minimal *>&1 | Tee-Object -FilePath ../restore-plus.log
+          msbuild "Ink Canvas.sln" -target:"InkCanvasPlus" /p:Configuration=Release /p:Platform="Any CPU" /p:GitFlow="Github Action" /verbosity:minimal *>&1 | Tee-Object -FilePath ../build-plus.log
+          if ($LASTEXITCODE -ne 0) { throw "msbuild failed ($LASTEXITCODE)" }
+
+      - name: Package desktop
+        shell: pwsh
+        run: |
+          $out = 'plus-src/Ink Canvas/bin/Release'
+          if (-not (Test-Path $out)) { throw 'no build output dir' }
+          (Get-ChildItem $out -File | Select-Object -First 12).Name | ForEach-Object { Write-Host "  $_" }
+          Compress-Archive -Path "$out/*" -DestinationPath 'SchoolToolsBoard-Plus-win.zip' -Force
+          Write-Host ("zip=" + (Get-Item 'SchoolToolsBoard-Plus-win.zip').Length + " bytes")
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) { try { choco install innosetup -y --no-progress *>&1 | Out-Null } catch {} }
+          if (-not (Test-Path $iscc)) { throw 'ISCC not found' }
+          Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri 'https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/ChineseSimplified.isl' -OutFile 'C:\Program Files (x86)\Inno Setup 6\Languages\ChineseSimplified.isl'
+          & $iscc 'plus-src\packaging\setup.iss' *>&1 | Tee-Object -FilePath iscc-plus.log
+          Write-Host "iscc exit=$LASTEXITCODE"
+          $exe = Get-ChildItem 'plus-src/packaging/output' -Filter 'SchoolToolsBoard-Setup-*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { throw 'installer not produced' }
+          Write-Host ("setup=" + $exe.FullName + " " + $exe.Length + " bytes")
+
+      - name: Package assets
+        shell: pwsh
+        run: |
+          $ver = (Get-Content VERSION_PLUS -Raw).Trim()
+          New-Item -ItemType Directory -Force 'rel' | Out-Null
+          Copy-Item 'SchoolToolsBoard-Plus-win.zip' "rel/SchoolToolsBoard-Plus-Desktop-$ver.zip" -Force
+          $exe = Get-ChildItem 'plus-src/packaging/output' -Filter 'SchoolToolsBoard-Setup-*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          Copy-Item $exe.FullName "rel/SchoolToolsBoard-Setup-$ver.exe" -Force
+          Copy-Item 'plus-src/LICENSE' 'rel/LICENSE.txt' -Force
+          Get-ChildItem 'rel' | ForEach-Object { Write-Host "$($_.Name) $($_.Length) bytes" }
+
+      - name: Create or update GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ver = (Get-Content VERSION_PLUS -Raw).Trim()
+          $tag = "v$ver"
+          $title = "SchoolToolsBoard（STB）课堂白板 v$ver — 基于 Ink Canvas Plus"
+          gh release view $tag *>&1 | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag rel/* --clobber
+            gh release edit $tag --title $title --notes-file RELEASE_NOTES_PLUS.md
+          } else {
+            gh release create $tag rel/* --title $title --notes-file RELEASE_NOTES_PLUS.md --target "$env:GITHUB_SHA"
+          }
+          Write-Host 'release published'
+
+      - name: Publish diagnostics
+        if: always()
+        shell: pwsh
+        run: |
+          foreach ($f in @('restore-plus.log','build-plus.log','iscc-plus.log')) {
+            if (Test-Path $f) {
+              try { $u = (Invoke-WebRequest -Method Post -InFile $f -Uri 'https://paste.rs' -UseBasicParsing).Content.Trim(); Write-Host "::notice::$f -> $u" } catch {}
+            }
+          }
+          exit 0
