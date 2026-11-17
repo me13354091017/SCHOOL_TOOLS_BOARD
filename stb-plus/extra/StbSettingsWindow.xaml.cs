@@ -16,7 +16,7 @@ namespace InkCanvasPlus
     public partial class StbSettingsWindow : Window
     {
         private static StbSettingsWindow _instance;
-        private bool _loading = false;
+        private bool _loading = true;
         private Button[] _navButtons;
 
         private const string HomeUrl = "https://github.com/me13354091017/SCHOOL_TOOLS_BOARD";
@@ -47,6 +47,7 @@ namespace InkCanvasPlus
             TextVersion.Text = "版本 " + Assembly.GetExecutingAssembly().GetName().Version;
             LoadFromSettings();
             SelectSection(0);
+            _loading = false;
         }
 
         private static Settings S => MainWindow.Settings;
@@ -195,7 +196,7 @@ namespace InkCanvasPlus
         // 墨迹书写
         private void SliderInkWidth_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (TextInkWidth == null || _loading)
+            if (TextInkWidth == null)
             {
                 return;
             }
@@ -383,7 +384,7 @@ namespace InkCanvasPlus
 
         private void SliderTouchMultiplier_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (TextTouchMultiplier == null || _loading)
+            if (TextTouchMultiplier == null)
             {
                 return;
             }

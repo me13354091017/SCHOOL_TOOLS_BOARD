@@ -44,20 +44,15 @@ Edit $feat 'private void SystemEvents_UserPreferenceChanged(object sender, Micro
 $panel = Join-Path $app 'MainWindow.InputAndPanels.cs'
 Edit $panel 'private void CheckForUpdate()' 'public void CheckForUpdate()' 'CheckForUpdate -> public'
 
-Write-Host "== PHASE L3: 新增 ApplyStbTheme()（按当前 Settings.Appearance.Theme 重新应用主题） =="
-$themeHelper = @'
-
-        /// <summary>STB 设置页调用：按当前 Theme 索引重新应用主题。</summary>
-        public void ApplyStbTheme()
-        {
-            SystemEvents_UserPreferenceChanged(null, new Microsoft.Win32.UserPreferenceChangedEventArgs(Microsoft.Win32.UserPreferenceCategory.General));
-        }
-'@
-Edit $panel '        private void BtnSettings_Click(object sender, RoutedEventArgs e)' ($themeHelper.TrimEnd("`r", "`n") + "`r`n`r`n        private void BtnSettings_Click(object sender, RoutedEventArgs e)") 'insert ApplyStbTheme'
-
-Write-Host "== PHASE L4: 设置按钮改为打开 STB 设置窗口 =="
+Write-Host "== PHASE L3: 插入 ApplyStbTheme() 并把设置按钮改指新窗口 =="
 $oldOpen = '        private async void BtnSettings_Click(object sender, RoutedEventArgs e)'
 $newOpen = @'
+        /// <summary>STB 设置页调用：按当前 Settings.Appearance.Theme 重新应用主题。</summary>
+        public void ApplyStbTheme()
+        {
+            SystemEvents_UserPreferenceChanged(null, null);
+        }
+
         private void BtnSettings_Click(object sender, RoutedEventArgs e)
         {
             StbSettingsWindow.ShowFor(this);
@@ -65,9 +60,11 @@ $newOpen = @'
 
         private async void BtnSettings_Click_Legacy(object sender, RoutedEventArgs e)
 '@
-Edit $panel $oldOpen $newOpen.TrimEnd("`r", "`n") 'BtnSettings_Click -> StbSettingsWindow'
+Edit $panel $oldOpen ($newOpen.TrimEnd("`r", "`n")) 'settings button -> StbSettingsWindow + ApplyStbTheme'
 
-Write-Host "== PHASE L5: 旧设置面板默认不再可弹（入口统一走新窗口） =="
-Edit $panel 'if (BorderSettings.Tag as Visibility? == Visibility.Visible)' 'if (false && BorderSettings.Tag as Visibility? == Visibility.Visible)' 'legacy panel gate'
+Write-Host "== PHASE L4: 校验新窗口文件进入工程 =="
+Assert (Select-String -LiteralPath (Join-Path $app 'InkCanvasPlus.csproj') -Pattern 'Microsoft.NET.Sdk' -Quiet) 'csproj 非 SDK 风格，XAML 不会自动纳入编译'
+Assert (Test-Path -LiteralPath (Join-Path $app 'StbSettingsWindow.xaml')) 'StbSettingsWindow.xaml 未拷入'
+Write-Host 'OK  SDK 工程，StbSettingsWindow 会被自动编入'
 
 Write-Host ("STB SETTINGS PATCHES DONE ($count patches)")
