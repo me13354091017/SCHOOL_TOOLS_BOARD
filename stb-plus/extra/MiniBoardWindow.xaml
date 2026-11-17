@@ -78,6 +78,30 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="MBDotMini" TargetType="Button">
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#33FFFFFF" />
+            <Setter Property="Width" Value="28" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="MiniBg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="14">
+                            <TextBlock x:Name="Mark" Text="✓" FontSize="13" Foreground="White" Opacity="0"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="MiniBg" Property="BorderBrush" Value="#AAFFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid x:Name="RootGrid" Background="Transparent"
@@ -89,6 +113,53 @@
             <Grid>
                 <InkCanvas x:Name="MiniInkCanvas" Background="Transparent" EditingMode="Ink" />
 
+                <Popup x:Name="PopupPen" PlacementTarget="{Binding ElementName=BtnMBInk}" Placement="Bottom"
+                       StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" VerticalOffset="4">
+                    <Border Background="#FF161D18" BorderBrush="#40FFFFFF" BorderThickness="1" CornerRadius="10" Padding="10,9">
+                        <StackPanel Width="210">
+                            <TextBlock Text="画笔颜色" FontSize="10" Foreground="#99E8EBEF" Margin="2,0,0,5" />
+                            <UniformGrid Columns="6" Rows="2">
+                                <Button Style="{StaticResource MBDotMini}" Background="#FF101010" Tag="#FF101010" Click="BtnMBPaletteColor_Click" ToolTip="黑" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FFFFFFFF" Tag="#FFFFFFFF" Click="BtnMBPaletteColor_Click" ToolTip="白" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FFD32F2F" Tag="#FFD32F2F" Click="BtnMBPaletteColor_Click" ToolTip="红" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FFF57C00" Tag="#FFF57C00" Click="BtnMBPaletteColor_Click" ToolTip="橙" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FFF7C948" Tag="#FFF7C948" Click="BtnMBPaletteColor_Click" ToolTip="黄" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FF2E9E5B" Tag="#FF2E9E5B" Click="BtnMBPaletteColor_Click" ToolTip="绿" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FF00A3A3" Tag="#FF00A3A3" Click="BtnMBPaletteColor_Click" ToolTip="青" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FF1F6FC4" Tag="#FF1F6FC4" Click="BtnMBPaletteColor_Click" ToolTip="蓝" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FF7B5BD6" Tag="#FF7B5BD6" Click="BtnMBPaletteColor_Click" ToolTip="紫" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FFE45C9A" Tag="#FFE45C9A" Click="BtnMBPaletteColor_Click" ToolTip="粉" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FF8D6E63" Tag="#FF8D6E63" Click="BtnMBPaletteColor_Click" ToolTip="棕" />
+                                <Button Style="{StaticResource MBDotMini}" Background="#FF9AA0A6" Tag="#FF9AA0A6" Click="BtnMBPaletteColor_Click" ToolTip="灰" />
+                            </UniformGrid>
+                            <Border Height="1" Background="#33FFFFFF" Margin="0,9,0,7" />
+                            <TextBlock x:Name="TextBlockMBPenWidthInfo" Text="粗细 5 档 · 实际 2.5 磅"
+                                       FontSize="10" Foreground="#99E8EBEF" Margin="2,0,0,3" />
+                            <Slider x:Name="SliderMBPenWidth" Minimum="1" Maximum="20" Value="5"
+                                    TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="2"
+                                    ValueChanged="SliderMBPenWidth_ValueChanged" />
+                            <TextBlock Text="1 = 最细 0.5 磅　　20 = 最粗 10 磅"
+                                       FontSize="9" Foreground="#80E8EBEF" Margin="2,3,0,0" />
+                        </StackPanel>
+                    </Border>
+                </Popup>
+
+                <Popup x:Name="PopupEraser" PlacementTarget="{Binding ElementName=BtnMBEraser}" Placement="Bottom"
+                       StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" VerticalOffset="4">
+                    <Border Background="#FF161D18" BorderBrush="#40FFFFFF" BorderThickness="1" CornerRadius="10" Padding="10,9">
+                        <StackPanel Width="196">
+                            <TextBlock Text="橡皮大小" FontSize="10" Foreground="#99E8EBEF" Margin="2,0,0,5" />
+                            <Slider x:Name="SliderMBEraser" Minimum="4" Maximum="60" Value="14"
+                                    TickFrequency="1" IsSnapToTickEnabled="True" SmallChange="1" LargeChange="4"
+                                    ValueChanged="SliderMBEraser_ValueChanged" />
+                            <TextBlock x:Name="TextBlockMBEraserInfo" Text="直径 14 像素"
+                                       FontSize="10" Foreground="#99E8EBEF" Margin="2,3,0,0" />
+                            <TextBlock Text="橡皮为点擦：调大一次擦掉更多，调小更精细"
+                                       FontSize="9" Foreground="#80E8EBEF" TextWrapping="Wrap" Margin="2,3,0,0" />
+                        </StackPanel>
+                    </Border>
+                </Popup>
+
                 <Border x:Name="ToolBar" HorizontalAlignment="Right" VerticalAlignment="Top"
                         Margin="8" Padding="8,4" CornerRadius="14"
                         Background="#CC171E1A" BorderBrush="#40FFFFFF" BorderThickness="1">
@@ -97,7 +168,7 @@
                         <Button x:Name="BtnMBInkRed" Style="{StaticResource MBDot}" Background="#FFD32F2F" Margin="0,4,8,4" Click="BtnMBInkRed_Click" ToolTip="红笔" />
                         <Button x:Name="BtnMBInkBlue" Style="{StaticResource MBDot}" Background="#FF1F6FC4" Margin="0,4,4,4" Click="BtnMBInkBlue_Click" ToolTip="蓝笔" />
                         <Button x:Name="BtnMBInkWhite" Style="{StaticResource MBDot}" Background="#FFFFFFFF" Margin="0,4,10,4" Click="BtnMBInkWhite_Click" ToolTip="白笔" />
-                        <Button x:Name="BtnMBInk" Style="{StaticResource MBBtn}" Click="BtnMBInk_Click" ToolTip="书写">
+                        <Button x:Name="BtnMBInk" Style="{StaticResource MBBtn}" Click="BtnMBInkPanel_Click" ToolTip="笔（单击可选颜色与粗细）">
                             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                                 <Viewbox Width="14" Height="14" HorizontalAlignment="Center">
                                     <ui:SymbolIcon Symbol="Edit" Foreground="#FFE8EBEF" />
@@ -105,7 +176,7 @@
                                 <TextBlock Text="笔" FontSize="8" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
                             </StackPanel>
                         </Button>
-                        <Button x:Name="BtnMBEraser" Style="{StaticResource MBBtn}" Click="BtnMBEraser_Click" ToolTip="橡皮">
+                        <Button x:Name="BtnMBEraser" Style="{StaticResource MBBtn}" Click="BtnMBEraserPanel_Click" ToolTip="橡皮（双击可调橡皮大小）">
                             <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
                                 <Viewbox Width="14" Height="14" HorizontalAlignment="Center">
                                     <ui:SymbolIcon Symbol="Remove" Foreground="#FFE8EBEF" />

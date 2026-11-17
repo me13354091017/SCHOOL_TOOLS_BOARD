@@ -1,0 +1,194 @@
+using System;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Ink;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Threading;
+
+namespace InkCanvasPlus
+{
+    /// <summary>
+    /// 板中板画笔 / 橡皮的交互扩展（partial 文件，不改动 MiniBoardWindow.xaml.cs 原有代码）：
+    ///   · 单击「笔」→ 弹出调色板（12 色）+ 粗细滑杆（1–20 档，实际笔宽 = 档位 / 2）
+    ///   · 单击「橡皮」→ 切到点擦；双击（260ms 内第二次点击）→ 弹出橡皮大小滑杆（4–60）
+    /// 颜色、橡皮尺寸都与主界面同一套观感。
+    /// </summary>
+    public partial class MiniBoardWindow
+    {
+        private int _eraserSize = 14;
+        private DispatcherTimer _eraserClickTimer;
+        private bool _syncingPenUi = false;
+
+        private void EnsureEraserTimer()
+        {
+            if (_eraserClickTimer != null)
+            {
+                return;
+            }
+            _eraserClickTimer = new DispatcherTimer();
+            _eraserClickTimer.Interval = TimeSpan.FromMilliseconds(260);
+            _eraserClickTimer.Tick += (s, e) =>
+            {
+                _eraserClickTimer.Stop();
+                SwitchToEraser();
+            };
+        }
+
+        /// <summary>单击「笔」：切回书写并弹出调色板；已经打开时再点一次收起。</summary>
+        private void BtnMBInkPanel_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyPen();
+            if (PopupEraser != null)
+            {
+                PopupEraser.IsOpen = false;
+            }
+            bool willOpen = PopupPen != null && !PopupPen.IsOpen;
+            if (willOpen)
+            {
+                SyncPenUi();
+            }
+            if (PopupPen != null)
+            {
+                PopupPen.IsOpen = willOpen;
+            }
+        }
+
+        /// <summary>单击「橡皮」= 切橡皮；260ms 内再点一次 = 打开橡皮大小面板。</summary>
+        private void BtnMBEraserPanel_Click(object sender, RoutedEventArgs e)
+        {
+            EnsureEraserTimer();
+            if (_eraserClickTimer.IsEnabled)
+            {
+                _eraserClickTimer.Stop();
+                if (PopupPen != null)
+                {
+                    PopupPen.IsOpen = false;
+                }
+                MiniInkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
+                ApplyEraserShape();
+                SyncEraserUi();
+                if (PopupEraser != null)
+                {
+                    PopupEraser.IsOpen = true;
+                }
+            }
+            else
+            {
+                _eraserClickTimer.Start();
+            }
+        }
+
+        /// <summary>调色板里点某个颜色：换成该色、收起面板、回到书写。</summary>
+        private void BtnMBPaletteColor_Click(object sender, RoutedEventArgs e)
+        {
+            Button b = sender as Button;
+            if (b == null || b.Tag == null)
+            {
+                return;
+            }
+            try
+            {
+                object raw = ColorConverter.ConvertFromString(b.Tag.ToString());
+                if (raw is Color)
+                {
+                    _penColor = (Color)raw;
+                }
+            }
+            catch
+            {
+                return;
+            }
+            ApplyPen();
+            if (PopupPen != null)
+            {
+                PopupPen.IsOpen = false;
+            }
+        }
+
+        private void SwitchToEraser()
+        {
+            if (PopupEraser != null)
+            {
+                PopupEraser.IsOpen = false;
+            }
+            MiniInkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
+            ApplyEraserShape();
+        }
+
+        /// <summary>橡皮为点擦模式，直径写进 EraserShape（4–60 像素）。</summary>
+        private void ApplyEraserShape()
+        {
+            try
+            {
+                MiniInkCanvas.EraserShape = new EllipseStylusShape(_eraserSize, _eraserSize);
+            }
+            catch
+            {
+            }
+        }
+
+        private void SyncPenUi()
+        {
+            if (SliderMBPenWidth != null)
+            {
+                _syncingPenUi = true;
+                SliderMBPenWidth.Value = _penLevel;
+                _syncingPenUi = false;
+            }
+            UpdateWidthLabel();
+            UpdatePenInfo();
+            SyncEraserUi();
+        }
+
+        private void SyncEraserUi()
+        {
+            if (SliderMBEraser != null)
+            {
+                SliderMBEraser.Value = _eraserSize;
+            }
+            UpdateEraserInfo();
+        }
+
+        private void UpdatePenInfo()
+        {
+            if (TextBlockMBPenWidthInfo != null)
+            {
+                TextBlockMBPenWidthInfo.Text = "粗细 " + _penLevel + " 档 · 实际 " + PenWidth.ToString("0.0") + " 磅";
+            }
+        }
+
+        private void UpdateEraserInfo()
+        {
+            if (TextBlockMBEraserInfo != null)
+            {
+                TextBlockMBEraserInfo.Text = "直径 " + _eraserSize + " 像素";
+            }
+        }
+
+        private void SliderMBPenWidth_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (_syncingPenUi)
+            {
+                return;
+            }
+            int v = (int)Math.Round(e.NewValue);
+            if (v < MinPenLevel) v = MinPenLevel;
+            if (v > MaxPenLevel) v = MaxPenLevel;
+            _penLevel = v;
+            UpdateWidthLabel();
+            UpdatePenInfo();
+            ApplyPen();
+        }
+
+        private void SliderMBEraser_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            int v = (int)Math.Round(e.NewValue);
+            if (v < 4) v = 4;
+            if (v > 60) v = 60;
+            _eraserSize = v;
+            UpdateEraserInfo();
+            ApplyEraserShape();
+        }
+    }
+}
