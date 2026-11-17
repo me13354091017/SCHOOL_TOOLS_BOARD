@@ -68,3 +68,8 @@ Assert (Test-Path -LiteralPath (Join-Path $app 'StbSettingsWindow.xaml')) 'StbSe
 Write-Host 'OK  SDK 工程，StbSettingsWindow 会被自动编入'
 
 Write-Host ("STB SETTINGS PATCHES DONE ($count patches)")
+
+Write-Host "== PHASE M: 浮动栏 / 左侧竖栏 图标+文字入口 =="
+$floatbarPatch = Join-Path $PSScriptRoot 'apply-stb-floatbar.ps1'
+Assert (Test-Path -LiteralPath $floatbarPatch) 'missing stb-plus/apply-stb-floatbar.ps1'
+& $floatbarPatch -Root $Root -Version $Version
