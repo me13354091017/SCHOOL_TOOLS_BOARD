@@ -1,5 +1,6 @@
 # apply-stb-miniboard.ps1
 # PHASE K：为 IC+ 底座新增「板中板」窗口，并把自动更新地址改指本仓库。
+# 末尾串联 PHASE L（STB 设置页），使流水线只需调用本脚本。
 # 用法：pwsh ./stb-plus/apply-stb-miniboard.ps1 -Root plus-src
 param(
     [string]$Root = "plus-src",
@@ -82,3 +83,8 @@ Assert (Select-String -LiteralPath (Join-Path $app 'InkCanvasPlus.csproj') -Patt
 Write-Host 'OK  csproj 为 SDK 风格，xaml/cs 自动纳入编译'
 
 Write-Host ("STB MINIBOARD PATCHES DONE ($count patches)")
+
+Write-Host "== PHASE L: STB 设置页（PDF 式左导航 + 卡片） =="
+$settingsPatch = Join-Path $PSScriptRoot 'apply-stb-settings.ps1'
+Assert (Test-Path -LiteralPath $settingsPatch) 'missing stb-plus/apply-stb-settings.ps1'
+& $settingsPatch -Root $Root -Version $Version
