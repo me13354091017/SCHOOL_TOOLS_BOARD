@@ -1,6 +1,6 @@
 # apply-stb-miniboard.ps1
 # PHASE K：为 IC+ 底座新增「板中板」窗口，并把自动更新地址改指本仓库。
-# 末尾串联 PHASE L（STB 设置页），使流水线只需调用本脚本。
+# 末尾依次串联 PHASE L（STB 设置页）、PHASE M（浮动栏）、PHASE N（组件系统 + 浮动栏重绘）。
 # 用法：pwsh ./stb-plus/apply-stb-miniboard.ps1 -Root plus-src
 param(
     [string]$Root = "plus-src",
@@ -88,3 +88,8 @@ Write-Host "== PHASE L: STB 设置页（PDF 式左导航 + 卡片） =="
 $settingsPatch = Join-Path $PSScriptRoot 'apply-stb-settings.ps1'
 Assert (Test-Path -LiteralPath $settingsPatch) 'missing stb-plus/apply-stb-settings.ps1'
 & $settingsPatch -Root $Root -Version $Version
+
+Write-Host "== PHASE N: 组件系统 + 浮动栏重绘 + 设置页退出/重启 =="
+$componentsPatch = Join-Path $PSScriptRoot 'apply-stb-components.ps1'
+Assert (Test-Path -LiteralPath $componentsPatch) 'missing stb-plus/apply-stb-components.ps1'
+& $componentsPatch -Root $Root -Version $Version
