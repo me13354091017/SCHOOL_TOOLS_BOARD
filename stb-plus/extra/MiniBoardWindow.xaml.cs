@@ -8,7 +8,8 @@ using System.Windows.Media;
 namespace InkCanvasPlus
 {
     /// <summary>
-    /// 板中板（MiniBoard）：叠在主窗口上方的小白板，可拖动、可四边四角拖拽缩放、可直接手写。
+    /// 板中板（MiniBoard）：叠在主窗口上方的小黑板，可拖动、可四边四角拖拽缩放、可直接手写。
+    /// 外观与主程序黑板界面一致：同样 #101A16 深墨绿底、默认白色笔迹、深色浮动工具条。
     /// 由 stb-plus 补丁新增，不依赖上游代码。
     /// </summary>
     public partial class MiniBoardWindow : Window
@@ -19,8 +20,8 @@ namespace InkCanvasPlus
 
         private static MiniBoardWindow _instance;
         private double _penWidth = 3d;
-        private Color _penColor = Colors.Black;
-        private bool _darkBoard = false;
+        private Color _penColor = Colors.White;
+        private bool _darkBoard = true;
 
         private string _grip = "None";
         private bool _resizing = false;
@@ -59,7 +60,7 @@ namespace InkCanvasPlus
         {
             InitializeComponent();
             RootGrid.LostMouseCapture += (s, e) => { _resizing = false; };
-            ApplyPen();
+            SetBoard(true);
         }
 
         private void ApplyPen()
@@ -77,11 +78,28 @@ namespace InkCanvasPlus
         private void SetBoard(bool dark)
         {
             _darkBoard = dark;
-            MiniInkCanvas.Background = new SolidColorBrush(dark
-                ? Color.FromRgb(0x10, 0x1A, 0x16)
-                : Colors.White);
+
+            Color board = dark ? Color.FromRgb(0x10, 0x1A, 0x16) : Color.FromRgb(0xF7, 0xF8, 0xF6);
+            RootBorder.Background = new SolidColorBrush(board);
+            RootBorder.BorderBrush = new SolidColorBrush(dark
+                ? Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF)
+                : Color.FromArgb(0x33, 0x33, 0x32, 0x2F));
+
+            Color fg = dark ? Color.FromArgb(0xB3, 0xE8, 0xEB, 0xEF) : Color.FromArgb(0xB3, 0x33, 0x32, 0x2F);
+            TextBlockMiniBoardStatus.Foreground = new SolidColorBrush(fg);
+            BtnMBClose.Foreground = new SolidColorBrush(fg);
+            HeaderBar.Background = new SolidColorBrush(dark
+                ? Color.FromArgb(0x14, 0x00, 0x00, 0x00)
+                : Color.FromArgb(0x10, 0x00, 0x00, 0x00));
+            ToolBar.Background = new SolidColorBrush(dark
+                ? Color.FromArgb(0xCC, 0x17, 0x1E, 0x1A)
+                : Color.FromArgb(0xCC, 0xF5, 0xF3, 0xEE));
+            ToolBar.BorderBrush = new SolidColorBrush(dark
+                ? Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF)
+                : Color.FromArgb(0x33, 0x33, 0x32, 0x2F));
+
+            TextBlockMiniBoardStatus.Text = dark ? "板中板 · 黑板" : "板中板 · 白板";
             _penColor = dark ? Colors.White : Colors.Black;
-            TextBlockMiniBoardStatus.Text = dark ? "板中板 · STB（黑板）" : "板中板 · STB（白板）";
             ApplyPen();
         }
 
