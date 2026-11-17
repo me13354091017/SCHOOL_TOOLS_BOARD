@@ -10,7 +10,8 @@ namespace InkCanvasPlus
     /// <summary>
     /// 板中板（MiniBoard）：叠在主窗口上方的小黑板，可拖动、可四边四角拖拽缩放、可直接手写。
     /// 外观与主程序黑板界面一致：同样 #101A16 深墨绿底、默认白色笔迹、深色浮动工具条。
-    /// 画笔粗细也沿用主界面同一套规则：1–20 档（整数），实际笔宽 = 档位 / 2（默认 5 档 = 2.5 磅）。
+    /// 顶部有一条可见的拖拽条（抓手 + 标题 + 收起 / 换尺寸 / 关闭），按住即可移动窗口。
+    /// 画笔粗细沿用主界面同一套规则：1–20 档（整数），实际笔宽 = 档位 / 2（默认 5 档 = 2.5 磅）。
     /// 由 stb-plus 补丁新增，不依赖上游代码。
     /// </summary>
     public partial class MiniBoardWindow : Window
@@ -18,6 +19,7 @@ namespace InkCanvasPlus
         private const double EdgeGrip = 8d;
         private const double MinW = 280d;
         private const double MinH = 220d;
+        private const double CollapsedH = 44d;
 
         // 与主界面 InkWidthSlider 的取值范围一致（Minimum=1，Maximum=20，TickFrequency=1）
         private const int MinPenLevel = 1;
@@ -27,6 +29,11 @@ namespace InkCanvasPlus
         private int _penLevel = 5;
         private Color _penColor = Colors.White;
         private bool _darkBoard = true;
+
+        private bool _collapsed = false;
+        private double _restoreW = 480d;
+        private double _restoreH = 360d;
+        private int _sizeIndex = 1;
 
         private string _grip = "None";
         private bool _resizing = false;
@@ -105,12 +112,17 @@ namespace InkCanvasPlus
                 ? Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF)
                 : Color.FromArgb(0x33, 0x33, 0x32, 0x2F));
 
-            Color fg = dark ? Color.FromArgb(0xB3, 0xE8, 0xEB, 0xEF) : Color.FromArgb(0xB3, 0x33, 0x32, 0x2F);
+            Color fg = dark ? Color.FromArgb(0xFF, 0xE8, 0xEB, 0xEF) : Color.FromArgb(0xFF, 0x33, 0x32, 0x2F);
             TextBlockMiniBoardStatus.Foreground = new SolidColorBrush(fg);
-            BtnMBClose.Foreground = new SolidColorBrush(fg);
+            TextBlockMBClose.Foreground = new SolidColorBrush(fg);
+            TextBlockMBCollapse.Foreground = new SolidColorBrush(fg);
+
             HeaderBar.Background = new SolidColorBrush(dark
-                ? Color.FromArgb(0x14, 0x00, 0x00, 0x00)
-                : Color.FromArgb(0x10, 0x00, 0x00, 0x00));
+                ? Color.FromArgb(0xCC, 0x17, 0x1E, 0x1A)
+                : Color.FromArgb(0xCC, 0xF5, 0xF3, 0xEE));
+            HeaderBar.BorderBrush = new SolidColorBrush(dark
+                ? Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF)
+                : Color.FromArgb(0x26, 0x33, 0x32, 0x2F));
             ToolBar.Background = new SolidColorBrush(dark
                 ? Color.FromArgb(0xCC, 0x17, 0x1E, 0x1A)
                 : Color.FromArgb(0xCC, 0xF5, 0xF3, 0xEE));
@@ -140,6 +152,12 @@ namespace InkCanvasPlus
 
         private string HitGrip(Point p)
         {
+            // 收起成一条时不再响应四边缩放，只允许拖动
+            if (_collapsed)
+            {
+                return "None";
+            }
+
             bool left = p.X <= EdgeGrip;
             bool right = p.X >= ActualWidth - EdgeGrip;
             bool top = p.Y <= EdgeGrip;
@@ -269,12 +287,21 @@ namespace InkCanvasPlus
             RootGrid.ReleaseMouseCapture();
         }
 
+        /// <summary>按住顶部拖拽条移动窗口；双击在窗小 / 窗中 / 窗大之间切换。</summary>
         private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.LeftButton != MouseButtonState.Pressed)
             {
                 return;
             }
+
+            if (e.ClickCount == 2)
+            {
+                CycleSize();
+                e.Handled = true;
+                return;
+            }
+
             try
             {
                 DragMove();
@@ -282,6 +309,117 @@ namespace InkCanvasPlus
             catch
             {
             }
+        }
+
+        private void Header_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            // 拖动结束后光标可能停在边缘缩放区，重新判定一次，避免光标停留在拖动样式
+            if (!_collapsed)
+            {
+                Point p = e.GetPosition(RootGrid);
+                _grip = HitGrip(p);
+                SetGripCursor(_grip);
+            }
+        }
+
+        /// <summary>窗小 → 窗中 → 窗大 → 窗小，循环切换。</summary>
+        private void CycleSize()
+        {
+            _sizeIndex = (_sizeIndex + 1) % 3;
+            ApplySizeIndex();
+        }
+
+        private void ApplySizeIndex()
+        {
+            if (_collapsed)
+            {
+                ExpandBoard();
+            }
+
+            if (_sizeIndex == 0)
+            {
+                Width = 340;
+                Height = 260;
+            }
+            else if (_sizeIndex == 1)
+            {
+                Width = 480;
+                Height = 360;
+            }
+            else
+            {
+                Width = 760;
+                Height = 560;
+            }
+
+            ClampToWorkArea();
+        }
+
+        private void ClampToWorkArea()
+        {
+            Rect wa = SystemParameters.WorkArea;
+            if (Left + Width > wa.Right)
+            {
+                Left = Math.Max(wa.Left, wa.Right - Width);
+            }
+            if (Top + Height > wa.Bottom)
+            {
+                Top = Math.Max(wa.Top, wa.Bottom - Height);
+            }
+        }
+
+        /// <summary>收起成一条：只留顶部拖拽条，画板和工具条临时隐藏。</summary>
+        private void CollapseBoard()
+        {
+            if (_collapsed)
+            {
+                return;
+            }
+            _restoreW = ActualWidth > 0 ? ActualWidth : Width;
+            _restoreH = ActualHeight > 0 ? ActualHeight : Height;
+
+            _collapsed = true;
+            MiniInkCanvas.Visibility = Visibility.Collapsed;
+            ToolBar.Visibility = Visibility.Collapsed;
+            HeaderBar.CornerRadius = new CornerRadius(12);
+            TextBlockMBCollapse.Text = "▴";
+            MinHeight = 0d;
+            Height = CollapsedH;
+            ClampToWorkArea();
+        }
+
+        private void ExpandBoard()
+        {
+            if (!_collapsed)
+            {
+                return;
+            }
+            _collapsed = false;
+            MiniInkCanvas.Visibility = Visibility.Visible;
+            ToolBar.Visibility = Visibility.Visible;
+            HeaderBar.CornerRadius = new CornerRadius(12, 12, 0, 0);
+            TextBlockMBCollapse.Text = "▾";
+            MinHeight = MinH;
+            Width = _restoreW;
+            Height = _restoreH;
+            ClampToWorkArea();
+        }
+
+        private void BtnMBCollapse_Click(object sender, RoutedEventArgs e)
+        {
+            if (_collapsed)
+            {
+                ExpandBoard();
+            }
+            else
+            {
+                CollapseBoard();
+            }
+        }
+
+        private void BtnMBSizeCycle_Click(object sender, RoutedEventArgs e)
+        {
+            CycleSize();
         }
 
         private void BtnMBClose_Click(object sender, RoutedEventArgs e)
@@ -355,24 +493,6 @@ namespace InkCanvasPlus
         private void BtnMBBg_Click(object sender, RoutedEventArgs e)
         {
             SetBoard(!_darkBoard);
-        }
-
-        private void BtnMBSizeS_Click(object sender, RoutedEventArgs e)
-        {
-            Width = 340;
-            Height = 260;
-        }
-
-        private void BtnMBSizeM_Click(object sender, RoutedEventArgs e)
-        {
-            Width = 480;
-            Height = 360;
-        }
-
-        private void BtnMBSizeL_Click(object sender, RoutedEventArgs e)
-        {
-            Width = 760;
-            Height = 560;
         }
     }
 }

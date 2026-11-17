@@ -39,6 +39,30 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="MBBarBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Width" Value="26" />
+            <Setter Property="Height" Value="22" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="MBBarBtnBg" Background="{TemplateBinding Background}" CornerRadius="5">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="MBBarBtnBg" Property="Background" Value="#40FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="MBBarBtnBg" Property="Background" Value="#66FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="MBDot" TargetType="Button">
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="BorderBrush" Value="#66FFFFFF" />
@@ -66,17 +90,57 @@
                 <InkCanvas x:Name="MiniInkCanvas" Background="Transparent" EditingMode="Ink" />
 
                 <Border x:Name="HeaderBar" Height="30" VerticalAlignment="Top"
-                        Background="#14000000" CornerRadius="12,12,0,0"
-                        MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                        Background="#CC171E1A" BorderBrush="#33FFFFFF" BorderThickness="0,0,0,1"
+                        CornerRadius="12,12,0,0"
+                        MouseLeftButtonDown="Header_MouseLeftButtonDown"
+                        MouseLeftButtonUp="Header_MouseLeftButtonUp">
                     <Grid>
-                        <TextBlock x:Name="TextBlockMiniBoardStatus"
-                                   Text="板中板 · 黑板"
-                                   Margin="14,0,0,0" VerticalAlignment="Center"
-                                   FontSize="12" Foreground="#B3E8EBEF" />
-                        <Button x:Name="BtnMBClose" Content="✕" Width="28" Height="24"
-                                HorizontalAlignment="Right" Margin="0,0,6,0"
-                                Background="Transparent" BorderThickness="0" Padding="0"
-                                FontSize="12" Foreground="#B3E8EBEF" Click="BtnMBClose_Click" />
+                        <StackPanel x:Name="GripBar" Orientation="Horizontal" VerticalAlignment="Center"
+                                    Margin="8,0,0,0" Cursor="SizeAll"
+                                    ToolTip="拖动此条移动板中板，双击可放大或还原，点收起可缩成一条">
+                            <StackPanel Orientation="Vertical" Margin="0,0,6,0" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="3" Height="3" Margin="0,0,2,2" Opacity="0.75"
+                                             Fill="{Binding ElementName=TextBlockMiniBoardStatus, Path=Foreground}" />
+                                    <Ellipse Width="3" Height="3" Margin="0,0,2,2" Opacity="0.75"
+                                             Fill="{Binding ElementName=TextBlockMiniBoardStatus, Path=Foreground}" />
+                                    <Ellipse Width="3" Height="3" Margin="0,0,0,2" Opacity="0.75"
+                                             Fill="{Binding ElementName=TextBlockMiniBoardStatus, Path=Foreground}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="3" Height="3" Margin="0,0,2,0" Opacity="0.75"
+                                             Fill="{Binding ElementName=TextBlockMiniBoardStatus, Path=Foreground}" />
+                                    <Ellipse Width="3" Height="3" Margin="0,0,2,0" Opacity="0.75"
+                                             Fill="{Binding ElementName=TextBlockMiniBoardStatus, Path=Foreground}" />
+                                    <Ellipse Width="3" Height="3" Margin="0,0,0,0" Opacity="0.75"
+                                             Fill="{Binding ElementName=TextBlockMiniBoardStatus, Path=Foreground}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock x:Name="TextBlockMiniBoardStatus"
+                                       Text="板中板 · 黑板"
+                                       VerticalAlignment="Center"
+                                       FontSize="12" Foreground="#FFE8EBEF" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                    VerticalAlignment="Center" Margin="0,0,6,0">
+                            <Button x:Name="BtnMBCollapse" Style="{StaticResource MBBarBtn}"
+                                    Click="BtnMBCollapse_Click"
+                                    ToolTip="收起成一条，只留拖动条">
+                                <TextBlock x:Name="TextBlockMBCollapse" Text="▾" FontSize="11"
+                                           Foreground="#FFE8EBEF" />
+                            </Button>
+                            <Button x:Name="BtnMBSizeCycle" Style="{StaticResource MBBarBtn}"
+                                    Click="BtnMBSizeCycle_Click" ToolTip="在窗小 / 窗中 / 窗大之间切换">
+                                <Viewbox Width="12" Height="12" HorizontalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="FullScreen" Foreground="#FFE8EBEF" />
+                                </Viewbox>
+                            </Button>
+                            <Button x:Name="BtnMBClose" Style="{StaticResource MBBarBtn}"
+                                    Click="BtnMBClose_Click" ToolTip="关闭板中板">
+                                <TextBlock x:Name="TextBlockMBClose" Text="✕" FontSize="11"
+                                           Foreground="#FFE8EBEF" />
+                            </Button>
+                        </StackPanel>
                     </Grid>
                 </Border>
 
@@ -129,16 +193,6 @@
                                    Foreground="#FFE8EBEF" ToolTip="画笔档位（实际笔宽 = 档位 ÷ 2）" />
                         <Button x:Name="BtnMBWidthUp" Style="{StaticResource MBBtn}" Width="22" Click="BtnMBWidthUp_Click" ToolTip="画笔粗一档（与主界面一致：1–20 档，每档 0.5 磅）">
                             <TextBlock Text="＋" FontSize="12" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
-                        </Button>
-                        <Border Width="1" Background="#33FFFFFF" Margin="6,3,6,3" />
-                        <Button x:Name="BtnMBSizeS" Style="{StaticResource MBBtn}" Click="BtnMBSizeS_Click" ToolTip="窗口尺寸：小">
-                            <TextBlock Text="窗小" FontSize="9" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
-                        </Button>
-                        <Button x:Name="BtnMBSizeM" Style="{StaticResource MBBtn}" Click="BtnMBSizeM_Click" ToolTip="窗口尺寸：中">
-                            <TextBlock Text="窗中" FontSize="9" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
-                        </Button>
-                        <Button x:Name="BtnMBSizeL" Style="{StaticResource MBBtn}" Click="BtnMBSizeL_Click" ToolTip="窗口尺寸：大">
-                            <TextBlock Text="窗大" FontSize="9" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
                         </Button>
                     </WrapPanel>
                 </Border>
