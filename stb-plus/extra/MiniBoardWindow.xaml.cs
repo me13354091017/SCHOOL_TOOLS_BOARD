@@ -10,6 +10,7 @@ namespace InkCanvasPlus
     /// <summary>
     /// 板中板（MiniBoard）：叠在主窗口上方的小黑板，可拖动、可四边四角拖拽缩放、可直接手写。
     /// 外观与主程序黑板界面一致：同样 #101A16 深墨绿底、默认白色笔迹、深色浮动工具条。
+    /// 画笔粗细也沿用主界面同一套规则：1–20 档（整数），实际笔宽 = 档位 / 2（默认 5 档 = 2.5 磅）。
     /// 由 stb-plus 补丁新增，不依赖上游代码。
     /// </summary>
     public partial class MiniBoardWindow : Window
@@ -18,8 +19,12 @@ namespace InkCanvasPlus
         private const double MinW = 280d;
         private const double MinH = 220d;
 
+        // 与主界面 InkWidthSlider 的取值范围一致（Minimum=1，Maximum=20，TickFrequency=1）
+        private const int MinPenLevel = 1;
+        private const int MaxPenLevel = 20;
+
         private static MiniBoardWindow _instance;
-        private double _penWidth = 3d;
+        private int _penLevel = 5;
         private Color _penColor = Colors.White;
         private bool _darkBoard = true;
 
@@ -60,7 +65,22 @@ namespace InkCanvasPlus
         {
             InitializeComponent();
             RootGrid.LostMouseCapture += (s, e) => { _resizing = false; };
+            UpdateWidthLabel();
             SetBoard(true);
+        }
+
+        /// <summary>当前档位对应的实际笔宽，换算方式和主界面「Settings.Canvas.InkWidth = 档位 / 2」相同。</summary>
+        private double PenWidth
+        {
+            get { return _penLevel / 2.0; }
+        }
+
+        private void UpdateWidthLabel()
+        {
+            if (TextBlockMBWidth != null)
+            {
+                TextBlockMBWidth.Text = _penLevel.ToString();
+            }
         }
 
         private void ApplyPen()
@@ -68,8 +88,8 @@ namespace InkCanvasPlus
             MiniInkCanvas.EditingMode = InkCanvasEditingMode.Ink;
             DrawingAttributes da = MiniInkCanvas.DefaultDrawingAttributes.Clone();
             da.Color = _penColor;
-            da.Width = _penWidth;
-            da.Height = _penWidth;
+            da.Width = PenWidth;
+            da.Height = PenWidth;
             da.FitToCurve = false;
             da.IgnorePressure = true;
             MiniInkCanvas.DefaultDrawingAttributes = da;
@@ -293,21 +313,27 @@ namespace InkCanvasPlus
             ApplyPen();
         }
 
-        private void BtnMBThin_Click(object sender, RoutedEventArgs e)
+        /// <summary>画笔细一档，和主界面「画笔粗细 －」按钮完全同样：档位 -1，夹在 1–20。</summary>
+        private void BtnMBWidthDown_Click(object sender, RoutedEventArgs e)
         {
-            _penWidth = 2d;
+            if (_penLevel <= MinPenLevel)
+            {
+                return;
+            }
+            _penLevel -= 1;
+            UpdateWidthLabel();
             ApplyPen();
         }
 
-        private void BtnMBMedium_Click(object sender, RoutedEventArgs e)
+        /// <summary>画笔粗一档，和主界面「画笔粗细 ＋」按钮完全同样：档位 +1，夹在 1–20。</summary>
+        private void BtnMBWidthUp_Click(object sender, RoutedEventArgs e)
         {
-            _penWidth = 4d;
-            ApplyPen();
-        }
-
-        private void BtnMBThick_Click(object sender, RoutedEventArgs e)
-        {
-            _penWidth = 7d;
+            if (_penLevel >= MaxPenLevel)
+            {
+                return;
+            }
+            _penLevel += 1;
+            UpdateWidthLabel();
             ApplyPen();
         }
 

@@ -120,23 +120,25 @@
                                 <TextBlock Text="板色" FontSize="8" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
                             </StackPanel>
                         </Button>
-                        <Button x:Name="BtnMBThin" Style="{StaticResource MBBtn}" Click="BtnMBThin_Click" ToolTip="细笔">
-                            <TextBlock Text="细" FontSize="10" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
+                        <Border Width="1" Background="#33FFFFFF" Margin="6,3,6,3" />
+                        <Button x:Name="BtnMBWidthDown" Style="{StaticResource MBBtn}" Width="22" Click="BtnMBWidthDown_Click" ToolTip="画笔细一档（与主界面一致：1–20 档，每档 0.5 磅）">
+                            <TextBlock Text="－" FontSize="12" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
                         </Button>
-                        <Button x:Name="BtnMBMedium" Style="{StaticResource MBBtn}" Click="BtnMBMedium_Click" ToolTip="中笔">
-                            <TextBlock Text="中" FontSize="10" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
+                        <TextBlock x:Name="TextBlockMBWidth" Text="5" FontSize="12" Width="18"
+                                   TextAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="#FFE8EBEF" ToolTip="画笔档位（实际笔宽 = 档位 ÷ 2）" />
+                        <Button x:Name="BtnMBWidthUp" Style="{StaticResource MBBtn}" Width="22" Click="BtnMBWidthUp_Click" ToolTip="画笔粗一档（与主界面一致：1–20 档，每档 0.5 磅）">
+                            <TextBlock Text="＋" FontSize="12" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
                         </Button>
-                        <Button x:Name="BtnMBThick" Style="{StaticResource MBBtn}" Click="BtnMBThick_Click" ToolTip="粗笔">
-                            <TextBlock Text="粗" FontSize="10" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
+                        <Border Width="1" Background="#33FFFFFF" Margin="6,3,6,3" />
+                        <Button x:Name="BtnMBSizeS" Style="{StaticResource MBBtn}" Click="BtnMBSizeS_Click" ToolTip="窗口尺寸：小">
+                            <TextBlock Text="窗小" FontSize="9" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
                         </Button>
-                        <Button x:Name="BtnMBSizeS" Style="{StaticResource MBBtn}" Click="BtnMBSizeS_Click" ToolTip="缩小">
-                            <TextBlock Text="小" FontSize="10" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
+                        <Button x:Name="BtnMBSizeM" Style="{StaticResource MBBtn}" Click="BtnMBSizeM_Click" ToolTip="窗口尺寸：中">
+                            <TextBlock Text="窗中" FontSize="9" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
                         </Button>
-                        <Button x:Name="BtnMBSizeM" Style="{StaticResource MBBtn}" Click="BtnMBSizeM_Click" ToolTip="中号">
-                            <TextBlock Text="中" FontSize="10" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
-                        </Button>
-                        <Button x:Name="BtnMBSizeL" Style="{StaticResource MBBtn}" Click="BtnMBSizeL_Click" ToolTip="放大">
-                            <TextBlock Text="大" FontSize="10" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
+                        <Button x:Name="BtnMBSizeL" Style="{StaticResource MBBtn}" Click="BtnMBSizeL_Click" ToolTip="窗口尺寸：大">
+                            <TextBlock Text="窗大" FontSize="9" HorizontalAlignment="Center" Foreground="#FFE8EBEF" />
                         </Button>
                     </WrapPanel>
                 </Border>
