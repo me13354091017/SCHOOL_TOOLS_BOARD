@@ -1,0 +1,471 @@
+<Window x:Class="InkCanvasPlus.StbSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        Title="设置 · SchoolToolsBoard"
+        Width="1000" Height="680"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" WindowStartupLocation="CenterScreen"
+        ui:ThemeManager.RequestedTheme="Light"
+        FontFamily="Microsoft YaHei UI" SnapsToDevicePixels="True"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Window.Resources>
+        <Style x:Key="StbCard" TargetType="Border">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#E6E1D6" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style x:Key="StbCardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="#33322F" />
+        </Style>
+        <Style x:Key="StbCardDesc" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#8A8578" />
+            <Setter Property="Margin" Value="0,3,0,0" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="StbNav" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="14,10" />
+            <Setter Property="Margin" Value="0,0,0,2" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="#3F3C34" />
+        </Style>
+        <Style x:Key="StbLink" TargetType="Button">
+            <Setter Property="Background" Value="#EAF1EC" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#14523B" />
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+    </Window.Resources>
+
+    <Border Margin="0" CornerRadius="14" Background="#F7F8F6"
+            BorderBrush="#D8D3C8" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="#FFFFFF" CornerRadius="14,14,0,0"
+                    BorderBrush="#E6E1D6" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                <Grid Margin="24,16,16,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="设置" FontSize="20" FontWeight="SemiBold" Foreground="#22201C" />
+                        <TextBlock Text="SchoolToolsBoard · 修改即时生效并自动保存" FontSize="12" Foreground="#8A8578" Margin="0,4,0,0" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="✕" Width="32" Height="32" Padding="0"
+                            Background="Transparent" BorderThickness="0" FontSize="14"
+                            VerticalAlignment="Top" Click="BtnClose_Click" />
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="220" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="#F1F3EF" CornerRadius="0,0,0,14">
+                    <StackPanel Margin="12,16,12,12">
+                        <Button x:Name="BtnNav0" Content="墨迹书写" Tag="0" Style="{StaticResource StbNav}" Click="Nav_Click" />
+                        <Button x:Name="BtnNav1" Content="外观主题" Tag="1" Style="{StaticResource StbNav}" Click="Nav_Click" />
+                        <Button x:Name="BtnNav2" Content="画板行为" Tag="2" Style="{StaticResource StbNav}" Click="Nav_Click" />
+                        <Button x:Name="BtnNav3" Content="PPT 批注" Tag="3" Style="{StaticResource StbNav}" Click="Nav_Click" />
+                        <Button x:Name="BtnNav4" Content="数据存储" Tag="4" Style="{StaticResource StbNav}" Click="Nav_Click" />
+                        <Button x:Name="BtnNav5" Content="高级" Tag="5" Style="{StaticResource StbNav}" Click="Nav_Click" />
+                        <Button x:Name="BtnNav6" Content="关于应用" Tag="6" Style="{StaticResource StbNav}" Click="Nav_Click" />
+                    </StackPanel>
+                </Border>
+
+                <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="20,16,20,16">
+                    <Grid>
+                        <!-- 0 墨迹书写 -->
+                        <StackPanel x:Name="Panel0" Visibility="Visible">
+                            <TextBlock Text="墨迹书写" FontSize="22" FontWeight="SemiBold" Foreground="#22201C" Margin="0,4,0,12" />
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="笔迹宽度" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="手写笔迹的基础粗细，0.5 到 8" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                        <Slider x:Name="SliderInkWidth" Width="170" Minimum="0.5" Maximum="8"
+                                                TickFrequency="0.5" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                                                ValueChanged="SliderInkWidth_ValueChanged" />
+                                        <TextBlock x:Name="TextInkWidth" MinWidth="44" TextAlignment="Right"
+                                                   VerticalAlignment="Center" Foreground="#5B5749" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="显示画笔光标" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="在抬笔位置显示光标圈，便于远距离查看落笔点" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwShowCursor" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwShowCursor_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="选择时隐藏墨迹" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="套索选中时暂时隐藏未被选中的笔迹" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwHideStrokeWhenSelecting" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwHideStrokeWhenSelecting_Toggled" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- 1 外观主题 -->
+                        <StackPanel x:Name="Panel1" Visibility="Collapsed">
+                            <TextBlock Text="外观主题" FontSize="22" FontWeight="SemiBold" Foreground="#22201C" Margin="0,4,0,12" />
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="颜色主题" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="STB 象牙白 / STB 石墨为 SchoolToolsBoard 自有配色" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ComboBox x:Name="ComboTheme" Grid.Column="1" Width="240" VerticalAlignment="Center"
+                                              SelectionChanged="ComboTheme_SelectionChanged">
+                                        <ComboBoxItem Content="STB 象牙白 - 浅色" Tag="18" />
+                                        <ComboBoxItem Content="STB 石墨 - 深色" Tag="19" />
+                                        <ComboBoxItem Content="STB - 跟随系统" Tag="20" />
+                                        <ComboBoxItem Content="Plus 金秋黄 - 浅色" Tag="15" />
+                                        <ComboBoxItem Content="Plus 金秋黄 - 深色" Tag="16" />
+                                        <ComboBoxItem Content="经典浅色" Tag="0" />
+                                        <ComboBoxItem Content="经典深色" Tag="1" />
+                                        <ComboBoxItem Content="跟随系统" Tag="2" />
+                                    </ComboBox>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="浮动栏自动收起" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="长时间不操作时隐藏浮动工具栏，贴边唤出" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwAutoCollapseFloatBar" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwAutoCollapseFloatBar_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="浮动栏靠屏幕右侧" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="默认靠左下，适合右手持笔的讲台位置" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwFloatBarRight" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwFloatBarRight_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="显示退出按钮" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="在浮动栏上显示退出课堂白板的按钮" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwShowExit" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwShowExit_Toggled" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- 2 画板行为 -->
+                        <StackPanel x:Name="Panel2" Visibility="Collapsed">
+                            <TextBlock Text="画板行为" FontSize="22" FontWeight="SemiBold" Foreground="#22201C" Margin="0,4,0,12" />
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="启动时不自动进入批注" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="启动后画布保持透明，不遮挡桌面内容" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwAutoHideCanvas" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwAutoHideCanvas_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="自动进入手指模式" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="启动即允许单指拖动窗口、双指缩放" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwAutoEnterFinger" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwAutoEnterFinger_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="双指缩放" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="两指拉开或收拢改变画布缩放比" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwTwoFingerZoom" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwTwoFingerZoom_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="双指平移" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="两指同时拖动平移画布内容" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwTwoFingerTranslate" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwTwoFingerTranslate_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="双指旋转" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="两指旋转改变画布角度" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwTwoFingerRotate" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwTwoFingerRotate_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="开机自动运行" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="登录 Windows 后自动启动课堂白板" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwRunAtStartup" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwRunAtStartup_Toggled" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- 3 PPT 批注 -->
+                        <StackPanel x:Name="Panel3" Visibility="Collapsed">
+                            <TextBlock Text="PPT 批注" FontSize="22" FontWeight="SemiBold" Foreground="#22201C" Margin="0,4,0,12" />
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="支持 PowerPoint 批注" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="检测放映窗口并在幻灯片上叠加批注层" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwPptSupport" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwPptSupport_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="显示 PPT 翻页导航" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="在浮动栏旁显示上一页 / 下一页按钮" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwPptNav" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwPptNav_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="自动保存 PPT 笔迹" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="按演示文稿名与页码归档，便于课后回看" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwPptAutoSaveStrokes" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwPptAutoSaveStrokes_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="提醒上次播放位置" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="再次打开同一课件时提示跳转到上次页码" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwPptNotifyPrev" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwPptNotifyPrev_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="兼容 WPS 演示" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="使用 WPS 放映时同样叠加批注层" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwPptWps" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwPptWps_Toggled" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- 4 数据存储 -->
+                        <StackPanel x:Name="Panel4" Visibility="Collapsed">
+                            <TextBlock Text="数据存储" FontSize="22" FontWeight="SemiBold" Foreground="#22201C" Margin="0,4,0,12" />
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="截图按日期分文件夹" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="截图按 年-月-日 归档，便于课后查找" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwShotDateFolder" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwShotDateFolder_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="截图时另存笔迹" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="除图片外额外保存可回放的笔迹文件" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwAutoSaveAtShot" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwAutoSaveAtShot_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="清屏前自动备份" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="一键清屏前先保存当前笔迹，防误清" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwAutoSaveAtClear" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwAutoSaveAtClear_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="退出书写模式自动清屏" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="切回桌面时自动清除笔迹，避免残留遮挡" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwAutoClearExit" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwAutoClearExit_Toggled" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- 5 高级 -->
+                        <StackPanel x:Name="Panel5" Visibility="Collapsed">
+                            <TextBlock Text="高级" FontSize="22" FontWeight="SemiBold" Foreground="#22201C" Margin="0,4,0,12" />
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="特殊屏幕适配" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="针对大尺寸触控一体机修正触点映射" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwSpecialScreen" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwSpecialScreen_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="触摸倍率" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="多点触控位移修正系数，默认 0.3" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                                        <Slider x:Name="SliderTouchMultiplier" Width="170" Minimum="0.1" Maximum="1"
+                                                TickFrequency="0.05" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                                                ValueChanged="SliderTouchMultiplier_ValueChanged" />
+                                        <TextBlock x:Name="TextTouchMultiplier" MinWidth="44" TextAlignment="Right"
+                                                   VerticalAlignment="Center" Foreground="#5B5749" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="四路红外触控" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="适配四边红外框的老式一体机" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwQuadIR" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwQuadIR_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="写入运行日志" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="异常排查用，日常可关闭以减少磁盘写入" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwLog" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwLog_Toggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="禁用系统边缘手势" Style="{StaticResource StbCardTitle}" />
+                                        <TextBlock Text="避免从屏幕边缘起笔时被系统手势拦截" Style="{StaticResource StbCardDesc}" />
+                                    </StackPanel>
+                                    <ui:ToggleSwitch x:Name="SwDisableEdgeGesture" Grid.Column="1" OnContent="开" OffContent="关"
+                                                     VerticalAlignment="Center" Toggled="SwDisableEdgeGesture_Toggled" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- 6 关于 -->
+                        <StackPanel x:Name="Panel6" Visibility="Collapsed">
+                            <TextBlock Text="关于应用" FontSize="22" FontWeight="SemiBold" Foreground="#22201C" Margin="0,4,0,12" />
+                            <Border Style="{StaticResource StbCard}">
+                                <StackPanel>
+                                    <TextBlock Text="SchoolToolsBoard（STB）课堂白板" FontSize="16" Foreground="#33322F" />
+                                    <TextBlock x:Name="TextVersion" Text="版本 " Margin="0,6,0,0" FontSize="12" Foreground="#8A8578" />
+                                    <TextBlock Text="底座：Ink Canvas Plus（GPL-3.0，Clover Yan）；STB 只在构建前打补丁，不改上游源码"
+                                               Style="{StaticResource StbCardDesc}" Margin="0,10,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource StbCard}">
+                                <StackPanel>
+                                    <TextBlock Text="应用更新" Style="{StaticResource StbCardTitle}" />
+                                    <TextBlock Text="检查更新会读取本仓库 Release 上的 version.xml" Style="{StaticResource StbCardDesc}" />
+                                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                        <Button Content="检查更新" Style="{StaticResource StbLink}" Click="BtnCheckUpdate_Click" />
+                                        <Button Content="项目主页" Style="{StaticResource StbLink}" Click="BtnOpenHome_Click" />
+                                        <Button Content="开源许可" Style="{StaticResource StbLink}" Click="BtnViewLicense_Click" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
