@@ -10,7 +10,7 @@ namespace InkCanvasPlus
     /// <summary>
     /// 板中板（MiniBoard）：叠在主窗口上方的小黑板，可拖动、可四边四角拖拽缩放、可直接手写。
     /// 外观与主程序黑板界面一致：同样 #101A16 深墨绿底、默认白色笔迹、深色浮动工具条。
-    /// 顶部有一条可见的拖拽条（抓手 + 标题 + 收起 / 换尺寸 / 关闭），按住即可移动窗口。
+    /// 底部一条可见的拖拽条（抓手 + 标题 + 收起 / 换尺寸 / 关闭），右端带拖拽角可自由改大小。
     /// 画笔粗细沿用主界面同一套规则：1–20 档（整数），实际笔宽 = 档位 / 2（默认 5 档 = 2.5 磅）。
     /// 由 stb-plus 补丁新增，不依赖上游代码。
     /// </summary>
@@ -19,7 +19,7 @@ namespace InkCanvasPlus
         private const double EdgeGrip = 8d;
         private const double MinW = 280d;
         private const double MinH = 220d;
-        private const double CollapsedH = 44d;
+        private const double CollapsedH = 40d;
 
         // 与主界面 InkWidthSlider 的取值范围一致（Minimum=1，Maximum=20，TickFrequency=1）
         private const int MinPenLevel = 1;
@@ -287,7 +287,7 @@ namespace InkCanvasPlus
             RootGrid.ReleaseMouseCapture();
         }
 
-        /// <summary>按住顶部拖拽条移动窗口；双击在窗小 / 窗中 / 窗大之间切换。</summary>
+        /// <summary>按住底部拖拽条移动窗口；双击在窗小 / 窗中 / 窗大之间切换。</summary>
         private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (e.LeftButton != MouseButtonState.Pressed)
@@ -320,6 +320,33 @@ namespace InkCanvasPlus
                 _grip = HitGrip(p);
                 SetGripCursor(_grip);
             }
+        }
+
+        /// <summary>拖拽角：抓住右下角同时调整宽和高，最小仍为 280×220。</summary>
+        private void ResizeCorner_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_collapsed || e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            _grip = "BR";
+            _resizing = true;
+            _startCursor = ScreenDip(e.GetPosition(this));
+            _startRect = new Rect(Left, Top, ActualWidth, ActualHeight);
+            RootGrid.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void ResizeCorner_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_resizing)
+            {
+                return;
+            }
+            _resizing = false;
+            RootGrid.ReleaseMouseCapture();
+            e.Handled = true;
         }
 
         /// <summary>窗小 → 窗中 → 窗大 → 窗小，循环切换。</summary>
@@ -368,7 +395,7 @@ namespace InkCanvasPlus
             }
         }
 
-        /// <summary>收起成一条：只留顶部拖拽条，画板和工具条临时隐藏。</summary>
+        /// <summary>收起成一条：只留底部拖拽条，画板和工具条临时隐藏。</summary>
         private void CollapseBoard()
         {
             if (_collapsed)
@@ -381,8 +408,9 @@ namespace InkCanvasPlus
             _collapsed = true;
             MiniInkCanvas.Visibility = Visibility.Collapsed;
             ToolBar.Visibility = Visibility.Collapsed;
+            ResizeCorner.Visibility = Visibility.Collapsed;
             HeaderBar.CornerRadius = new CornerRadius(12);
-            TextBlockMBCollapse.Text = "▴";
+            TextBlockMBCollapse.Text = "▾";
             MinHeight = 0d;
             Height = CollapsedH;
             ClampToWorkArea();
@@ -397,8 +425,9 @@ namespace InkCanvasPlus
             _collapsed = false;
             MiniInkCanvas.Visibility = Visibility.Visible;
             ToolBar.Visibility = Visibility.Visible;
-            HeaderBar.CornerRadius = new CornerRadius(12, 12, 0, 0);
-            TextBlockMBCollapse.Text = "▾";
+            ResizeCorner.Visibility = Visibility.Visible;
+            HeaderBar.CornerRadius = new CornerRadius(0, 0, 12, 12);
+            TextBlockMBCollapse.Text = "▴";
             MinHeight = MinH;
             Width = _restoreW;
             Height = _restoreH;
