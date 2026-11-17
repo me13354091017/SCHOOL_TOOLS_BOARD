@@ -1,0 +1,127 @@
+<Window x:Class="InkCanvasPlus.StbComponentDock"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        Title="组件 · STB"
+        Width="360" Height="300"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual"
+        FontFamily="Microsoft YaHei UI"
+        SnapsToDevicePixels="True">
+    <Window.Resources>
+        <Style x:Key="CompRow" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="RowBg" Background="{TemplateBinding Background}" CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="RowBg" Property="Background" Value="#22FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="RowBg" Property="Background" Value="#33FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Background="Transparent">
+        <Border x:Name="RootBorder" Margin="6" CornerRadius="12"
+                Background="#FF101A16" BorderBrush="#33FFFFFF" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="34" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <Border x:Name="HeaderBar" Grid.Row="0" Background="#CC171E1A" CornerRadius="12,12,0,0"
+                        BorderBrush="#33FFFFFF" BorderThickness="0,0,0,1"
+                        MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                    <Grid>
+                        <TextBlock Text="组件" Margin="14,0,0,0" VerticalAlignment="Center"
+                                   FontSize="13" FontWeight="SemiBold" Foreground="#FFE8EBEF" />
+                        <Button x:Name="BtnClose" Content="✕" Width="28" Height="24"
+                                HorizontalAlignment="Right" Margin="0,0,6,0"
+                                Background="Transparent" BorderThickness="0" Padding="0"
+                                FontSize="12" Foreground="#FFE8EBEF" Click="BtnClose_Click" />
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Row="1" Margin="10,10,10,12">
+                    <Button x:Name="BtnCompClock" Style="{StaticResource CompRow}" Click="BtnCompClock_Click" ToolTip="打开时钟">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="34" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0" Width="18" Height="18" HorizontalAlignment="Left">
+                                <ui:SymbolIcon Symbol="Contact" Foreground="#FFE8EBEF" />
+                            </Viewbox>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="时钟" FontSize="13" Foreground="#FFE8EBEF" />
+                                <TextBlock Text="课堂看时间，不占讲台" FontSize="10" Foreground="#94E8EBEF" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="打开 ›" FontSize="11" VerticalAlignment="Center" Foreground="#94E8EBEF" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="BtnCompCountdown" Style="{StaticResource CompRow}" Click="BtnCompCountdown_Click" ToolTip="打开倒计时">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="34" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0" Width="18" Height="18" HorizontalAlignment="Left">
+                                <ui:SymbolIcon Symbol="Play" Foreground="#FFE8EBEF" />
+                            </Viewbox>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="倒计时" FontSize="13" Foreground="#FFE8EBEF" />
+                                <TextBlock Text="限时练习、随堂测倒计时" FontSize="10" Foreground="#94E8EBEF" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="打开 ›" FontSize="11" VerticalAlignment="Center" Foreground="#94E8EBEF" />
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="BtnCompRandom" Style="{StaticResource CompRow}" Click="BtnCompRandom_Click" ToolTip="打开随机点名">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="34" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Viewbox Grid.Column="0" Width="18" Height="18" HorizontalAlignment="Left">
+                                <ui:SymbolIcon Symbol="People" Foreground="#FFE8EBEF" />
+                            </Viewbox>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="随机点名" FontSize="13" Foreground="#FFE8EBEF" />
+                                <TextBlock Text="按学号随机抽一位同学" FontSize="10" Foreground="#94E8EBEF" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="打开 ›" FontSize="11" VerticalAlignment="Center" Foreground="#94E8EBEF" />
+                        </Grid>
+                    </Button>
+
+                    <TextBlock Text="组件是独立小窗，可拖动摆到屏幕任意位置；关掉窗口即释放资源。"
+                               FontSize="10" Foreground="#80E8EBEF" TextWrapping="Wrap" Margin="10,8,10,0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
