@@ -1,5 +1,5 @@
 # apply-stb-components.ps1
-# PHASE N：组件系统（ICCCE 风格）+ 浮动栏重绘 + 设置页「退出/重启应用」。
+# PHASE N：组件系统（ICCCE 风格）+ 浮动栏重绘 + 设置页「退出/重启应用」+ PPT 灵敏度（N7）。
 # 由 apply-stb-miniboard.ps1 末尾串联，在 PHASE L / M 之后执行。
 param(
     [string]$Root = "plus-src",
@@ -30,7 +30,7 @@ $setXaml = Join-Path $app 'StbSettingsWindow.xaml'
 $setCs = Join-Path $app 'StbSettingsWindow.xaml.cs'
 
 Write-Host "== PHASE N1: 拷入组件系统文件 =="
-foreach ($f in @('StbComponents.cs', 'StbComponentWindow.xaml', 'StbComponentWindow.xaml.cs', 'StbComponentDock.xaml', 'StbComponentDock.xaml.cs', 'MainWindow.Components.cs')) {
+foreach ($f in @('StbComponents.cs', 'StbComponentWindow.xaml', 'StbComponentWindow.xaml.cs', 'StbComponentDock.xaml', 'StbComponentDock.xaml.cs', 'MainWindow.Components.cs', 'MiniBoardWindow.Pens.cs')) {
     $src = Join-Path $extra $f
     Assert (Test-Path -LiteralPath $src) "missing source $f"
     Copy-Item -LiteralPath $src -Destination $app -Force
@@ -117,6 +117,15 @@ $appHandlers = @'
 '@
 Edit $setCs $homeHandler ($appHandlers + $homeHandler) '设置页 重启/退出处理器'
 
+Write-Host "== PHASE N7: PPT 更灵敏（更快识别放映 / 翻页联动） =="
+$mwCs = Join-Path $app 'MainWindow.xaml.cs'
+Edit $mwCs 'timerCheckPPT.Interval = 1000;' 'timerCheckPPT.Interval = 300;' 'PPT 轮询 1000ms -> 300ms'
+
+$mps = Join-Path $app 'MainWindow.PresentationAndSettings.cs'
+$pptGuardOld = 'if (IsShowingRestoreHiddenSlidesWindow) return;'
+$pptGuardNew = $pptGuardOld + $NL + '                if (Process.GetProcessesByName("POWERPNT").Length == 0 && Process.GetProcessesByName("wpp").Length == 0) return;'
+Edit $mps $pptGuardOld $pptGuardNew 'PPT 轮询先判断进程（省掉 COM 空转）'
+
 Write-Host "== PHASE N6: 断言 =="
 Assert (Select-String -LiteralPath $mw -Pattern 'MouseUp="SymbolIconComponents_MouseUp"' -Quiet) '浮动栏组件入口未插入'
 Assert (Select-String -LiteralPath $mw -Pattern 'Click="BtnComponents_Click"' -Quiet) '左栏组件按钮未插入'
@@ -125,6 +134,9 @@ Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.Components.cs') -
 Assert (Select-String -LiteralPath $setXaml -Pattern 'Click="BtnRestartApp_Click"' -Quiet) '设置页重启按钮未插入'
 Assert (Select-String -LiteralPath $setCs -Pattern 'BtnExitApp_Click' -Quiet) '设置页退出处理器未写入'
 Assert (Test-Path -LiteralPath (Join-Path $app 'StbComponents.cs')) '组件源码未拷入'
+Assert (Test-Path -LiteralPath (Join-Path $app 'MiniBoardWindow.Pens.cs')) '板中板调色板代码未拷入'
+Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.xaml.cs') -Pattern 'timerCheckPPT.Interval = 300;' -Quiet) 'PPT 轮询间隔未改'
+Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.PresentationAndSettings.cs') -Pattern 'GetProcessesByName\("POWERPNT"\)' -Quiet) 'PPT 进程预判未插入'
 Write-Host 'OK  PHASE N 校验通过'
 
 Write-Host "STB COMPONENTS PATCHES DONE"
