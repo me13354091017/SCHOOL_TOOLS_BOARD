@@ -19,8 +19,10 @@ function Edit([string]$path, [string]$old, [string]$new, [string]$label, [int]$t
     $t = Get-Content -LiteralPath $path -Raw
     $n = ([regex]::Matches($t, [regex]::Escape($old))).Count
     Assert ($n -ge $times) "$label :: anchor not found (count=$n)"
-    $t = $t.Replace($old, $new)
-    [IO.File]::WriteAllText($path, $t, $utf8)
+    if ($n -gt 0) {
+        $t = $t.Replace($old, $new)
+        [IO.File]::WriteAllText($path, $t, $utf8)
+    }
     Write-Host ("PATCHED  " + $label + "  (x" + $n + ")")
 }
 
@@ -53,8 +55,8 @@ try {
     Write-Host "== PHASE G3: 墨迹与截图目录改名 =="
     foreach ($f in @('MainWindow.Features.cs', 'MainWindow.PresentationAndSettings.cs')) {
         $p = Join-Path $app $f
-        Edit $p 'Ink Canvas Strokes' 'SchoolToolsBoard\Strokes' "$f 墨迹目录改名" 2
-        Edit $p 'Ink Canvas Screenshots' 'SchoolToolsBoard\Screenshots' "$f 截图目录改名" 2
+        Edit $p 'Ink Canvas Strokes' 'SchoolToolsBoard\Strokes' "$f 墨迹目录改名" 1
+        Edit $p 'Ink Canvas Screenshots' 'SchoolToolsBoard\Screenshots' "$f 截图目录改名" 0
     }
 
     Write-Host "== PHASE G4: 板中板笔尖蓝框 =="
