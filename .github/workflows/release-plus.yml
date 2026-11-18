@@ -47,7 +47,13 @@ jobs:
       - name: NuGet restore
         working-directory: plus-src
         shell: pwsh
-        run: nuget restore "Ink Canvas.sln"
+        run: |
+          nuget restore "Ink Canvas.sln" *>&1 | Tee-Object -FilePath restore.log
+          if ($LASTEXITCODE -ne 0) {
+            $e = (Select-String -Path restore.log -Pattern 'error' | Select-Object -First 3 | ForEach-Object { $_.Line.Trim() }) -join ' || '
+            Write-Host "::error::nuget restore failed: $e"
+            throw 'restore failed'
+          }
 
       - name: Apply STB patches
         shell: pwsh
@@ -107,10 +113,19 @@ jobs:
         working-directory: plus-src
         shell: pwsh
         run: |
-          msbuild "Ink Canvas.sln" -t:restore /p:GitFlow="Github Action" /verbosity:minimal
-          if ($LASTEXITCODE -ne 0) { throw "restore failed ($LASTEXITCODE)" }
-          msbuild "Ink Canvas.sln" -target:"InkCanvasPlus" /p:Configuration=Release /p:Platform="Any CPU" /p:GitFlow="Github Action" /verbosity:minimal
-          if ($LASTEXITCODE -ne 0) { throw "msbuild failed ($LASTEXITCODE)" }
+          $ErrorActionPreference = 'Continue'
+          msbuild "Ink Canvas.sln" -t:restore /p:GitFlow="Github Action" /verbosity:minimal *>&1 | Tee-Object -FilePath restore-msbuild.log
+          if ($LASTEXITCODE -ne 0) {
+            $e = (Select-String -Path restore-msbuild.log -Pattern ': error ' | Select-Object -First 3 | ForEach-Object { $_.Line.Trim() }) -join ' || '
+            Write-Host "::error::msbuild restore failed: $e"
+            throw 'msbuild restore failed'
+          }
+          msbuild "Ink Canvas.sln" -target:"InkCanvasPlus" /p:Configuration=Release /p:Platform="Any CPU" /p:GitFlow="Github Action" /verbosity:minimal *>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) {
+            $e = (Select-String -Path build.log -Pattern ': error ' | Select-Object -First 6 | ForEach-Object { $_.Line.Trim() }) -join ' || '
+            Write-Host "::error::msbuild build failed: $e"
+            throw 'msbuild build failed'
+          }
 
       - name: Package desktop
         shell: pwsh
@@ -128,7 +143,11 @@ jobs:
           Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri 'https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/ChineseSimplified.isl' -OutFile 'C:\Program Files (x86)\Inno Setup 6\Languages\ChineseSimplified.isl'
           & $iscc 'plus-src\packaging\setup.iss' *>&1 | Tee-Object -FilePath iscc-plus.log
           $exe = Get-ChildItem 'plus-src/packaging/output' -Filter 'SchoolToolsBoard-Setup-*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $exe) { throw 'installer not produced' }
+          if (-not $exe) {
+            $e = (Get-Content iscc-plus.log -Tail 20) -join ' || '
+            Write-Host "::error::installer not produced: $e"
+            throw 'installer not produced'
+          }
 
       - name: Generate update manifest
         shell: pwsh
