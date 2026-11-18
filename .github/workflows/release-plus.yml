@@ -10,7 +10,7 @@ on:
       - 'VERSION_PLUS'
       - '.github/workflows/release-plus.yml'
       - 'stb-plus/**'
-  workflow_dispatch:
+    workflow_dispatch:
 
 permissions:
   contents: write
@@ -59,7 +59,7 @@ jobs:
           ./stb-plus/apply-stb-plus-patches.ps1 -Root plus-src -Version "$ver"
 
       - name: Apply STB mini board patch
-        shell: pwwsh
+        shell: pwsh
         run: |
           $ver = (Get-Content VERSION_PLUS -Raw).Trim()
           ./stb-plus/apply-stb-miniboard.ps1 -Root plus-src -Version "$ver"
