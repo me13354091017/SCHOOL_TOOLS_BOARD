@@ -28,7 +28,21 @@ try {
     Write-Host "== PHASE P1: 发行者 / 版权 =="
     $asm = Join-Path $app 'Properties/AssemblyInfo.cs'
     Edit $asm '[assembly: AssemblyCompany("SCHOOL_TOOLS")]' '[assembly: AssemblyCompany("周之尧")]' '发行者 AssemblyCompany'
-    Edit $asm 'Copyright © Clover Yan 2025; © XY Wang 2023' 'Copyright © 周之尧 2026；上游 Ink Canvas Plus © Clover Yan 2025 / XY Wang 2023（GPL-3.0）' '版权说明'
+
+    # 版权行在 PHASE G 已被改成 SCHOOL_TOOLS 版，这里兼容两种历史写法
+    $copyNew = 'Copyright © 周之尧 2026；上游 Ink Canvas Plus © Clover Yan 2025 / XY Wang 2023（GPL-3.0）'
+    $copyV1 = 'Copyright © SCHOOL_TOOLS 2026; based on Ink Canvas Plus by Clover Yan; © XY Wang 2023'
+    $copyV0 = 'Copyright © Clover Yan 2025; © XY Wang 2023'
+    $asmText = Get-Content -LiteralPath $asm -Raw
+    if ($asmText.Contains($copyV1)) {
+        Edit $asm $copyV1 $copyNew '版权说明'
+    }
+    elseif ($asmText.Contains($copyV0)) {
+        Edit $asm $copyV0 $copyNew '版权说明'
+    }
+    else {
+        throw "ANCHOR FAIL: 版权说明 :: anchor not found"
+    }
 
     $iss = Join-Path $Root 'packaging/setup.iss'
     Edit $iss '#define MyAppPublisher "SCHOOL_TOOLS"' '#define MyAppPublisher "周之尧"' 'iss 发行者'
