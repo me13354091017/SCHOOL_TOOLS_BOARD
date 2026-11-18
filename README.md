@@ -1,129 +1,78 @@
-# SchoolToolsBoard（STB）· 课堂白板
+# SchoolToolsBoard（STB）课堂白板
 
-面向**课堂触控一体机**的开源白板软件。**主应用程序 = 桌面版**，自 v1.0.0.0 起以开源项目 [Ink Canvas Plus（IC+）](https://github.com/clover-tree/Ink-Canvas-Plus) 为底座重构；早期 v1.1.x 的 ICC-CE 版本已归档保留；另有配套的 **Web 版**（零依赖、打开浏览器就能上课）。
+> 面向教室大屏与触控一体机的免费白板软件，按「希沃白板」的使用习惯重做交互，底座为开源项目 Ink Canvas Plus。
 
-> 本应用是 [**SCHOOL_TOOLS**](https://me13354091017.github.io/school_tools/)（一个足以改变全校的教学工具索引）旗下的应用，图标沿用 SCHOOL_TOOLS 的「玻璃板叠层 + 暖色底条」视觉，字母标记为 **STB**。
->
-> 血缘：Web 版核心笔迹工程思路源于作者上一个项目 [SCHOOL_TOOLS_PDF](https://github.com/me13354091017/SCHOOL_TOOLS_PDF)（WPF / PDF 墨迹白板）。
+![平台](https://img.shields.io/badge/Windows-10%2F11-2C6BED) ![底座](https://img.shields.io/badge/based%20on-Ink%20Canvas%20Plus-1F6FC4) ![许可](https://img.shields.io/badge/license-GPL--3.0-2FA84F)
 
-## 下载
+## 这是什么
 
-| 版本 | 说明 | 链接 |
-|---|---|---|
-| **桌面版（主应用，IC+ 底座）** | 当前主应用，v1.0.0.0 起 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
-| **Windows 安装包（推荐）** | Inno Setup 向导：可选目录、建快捷方式、带卸载项 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
-| **Web 离线单文件** | `dist/stb-standalone.html`，约 170 KB、双击即用、断网也能上课 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest> |
-| ICC-CE 底座旧版（归档） | v1.1.5，含板中板 | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/tag/v1.1.5> |
-| 全部版本 | | <https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases> |
+**SchoolToolsBoard（简称 STB）** 是 [SCHOOL_TOOLS](https://me13354091017.github.io/school_tools/) 系列里的课堂白板应用，专为「上课时随手就能写」而做：不用装驱动，不依赖 Office 插件，打开就能在 PPT、PDF、网页、桌面上直接批注、圈画、板书，并且能把整堂课的墨迹与截图留档。
 
-- 在线版：<https://me13354091017.github.io/SCHOOL_TOOLS_BOARD />
-- 母站：<https://me13354091017.github.io/school_tools />
+它的底座是开源项目 **Ink Canvas Plus**（GPL-3.0）。STB 不改动上游源码本体，所有改动都在构建前由 `stb-plus/*.ps1` 打补丁完成，因此上游每次更新都能干净地合并进来。
 
-## 主应用 · 桌面版（IC+ 底座）
+- 仓库名：`SCHOOL_TOOLS_BOARD`
+- 应用名：`SchoolToolsBoard`
+- 图标标识：`STB`
+- 发行者：周之尧
 
-底座为 `clover-tree/Ink-Canvas-Plus`（GPL-3.0，WPF / .NET Framework 4.7.2）。**不改上游源码**，全部改动在 CI 构建前打补丁，所以跟上游升级不会冲突。
+## 功能
 
-| 能力 | 说明 |
-|---|---|
-| PPT 演示批注 | PowerPoint 放映中直接书写，逐页保存墨迹，翻页墨迹跟着走（IC+ 自带 Interop 实现，不需要加载项） |
-| 多页板书 + 时间机器 | 滑页板书、无限步撤销/重做 |
-| 手势与笔压 | 双指缩放/旋转/平移，笔压参与笔宽，手掌防误触 |
-| 形状与学科工具 | 直线/矩形/椭圆/箭头/抛物线、坐标系与函数图、计时器、随机点名、遮罩、聚光灯、希沃图标包 |
-| **STB 视觉主题** | `STBLight`（象牙白）/ `STBDark`（石墨）两套浮动栏配色，启动默认合并 STB 浅色，`Settings.Appearance.Theme` 默认 18，主题切换表新增第 7 项 |
-| **黑板界面** | 黑板底 `#101A16`、白板底 `#F7F8F6`，全量替换取色常量与覆盖层 |
-| 品牌与图标 | 程序名 `SchoolToolsBoard`、窗口标题「School Tools Board 课堂白板」、公司 `SCHOOL_TOOLS`、图标用母站 STB 图标现场生成 |
+**书写与批注**
+- 笔 / 荧光笔 / 橡皮（点擦与整笔擦）/ 选择 / 手指拖动，一键切换
+- 12 色调色板：点浮动栏的「更多颜色」弹出，选完立刻能写，也支持自定义色
+- 笔迹粗细滑杆、橡皮大小 7 档调节（设置里改完立即生效）
+- 直线、矩形、圆等图形绘制，以及撤销 / 重做
 
-**跟 ICC-CE 版相比少的东西（实话实说）**：IC+ 没有板中板（MiniWhiteboard），所以 v1.0.0.0 **不提供**板中板；旧版 v1.1.5 仍可下载，需要板中板请用那个版本。旧版设置（`%APPDATA%\Ink Canvas`）不会自动迁移。
+**课堂场景**
+- 批注模式：浮在 PPT、WPS、PDF、浏览器之上直接写，翻页自动跟随
+- 黑板模式：整屏纯色板书，深浅主题切换
+- **板中板**：可拖动、可缩放的悬浮小画板，带标题拖拽条与右下拖拽角，支持最大化与折叠
+- 组件系统：时钟、倒计时、随机点名等课堂小工具
+- 截图、保存墨迹、保存到其它位置
 
-- 上游：<https://github.com/clover-tree/Ink-Canvas-Plus>（GPL-3.0，维护者 Clover Yan，复刻自 WXRIW/Ink Canvas）
-- 补丁：`stb-plus/apply-stb-plus-patches.ps1`（品牌/版本、窗口标题、默认主题、`case 6 → STB`、全局配色、主题字典、安装包脚本）
-- 流水线：`.github/workflows/release-plus.yml`（检出 IC+ → nuget restore → 打补丁 → 生成图标 → msbuild → zip → Inno Setup → 建 Release）
-- 产物：`SchoolToolsBoard-Setup-<版本>.exe`、`SchoolToolsBoard-Plus-Desktop-<版本>.zip`（解压运行 `SchoolToolsBoard.exe`）
+**系统集成**
+- 开机自启、单实例、托盘常驻
+- 边缘手势屏蔽，避免从屏幕边缘起笔被系统手势打断
+- 自动检查更新（读取本仓库 Release 的 `version.xml`）
 
-## 配套 · Web 版
+## 下载与安装
 
-| 维度 | 桌面版（主应用） | Web 版（配套） |
-|---|---|---|
-| 部署 | 下载 zip 解压即用 | 打开浏览器即可，可 PWA 离线 |
-| 平台 | Windows only | Windows / 鸿蒙 / Android 一体机通吃 |
-| 分发 | GitHub Release | GitHub Pages / U 盘拷一个 HTML |
-| 升级 | 覆盖文件 | 刷新页面 |
-| PPT 批注 | 支持 | 不支持（改为导入 PDF 讲评） |
+到 **Releases** 页下载最新版本：<https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases>
 
-一体机的痛点不是「功能少」，而是「装不上、跑不动、一升级就崩」。所以主应用直接拿成熟的桌面内核来用；现场装不了软件、只能用浏览器时，退回 Web 版。
+每个版本提供两个包：
 
-### Web 版能力要点
+| 文件 | 用途 |
+| --- | --- |
+| `SchoolToolsBoard-Setup-x.y.z.w.exe` | 安装包，安装到 `Program Files\SCHOOL_TOOLS\SchoolToolsBoard`，带开始菜单与桌面快捷方式，支持覆盖升级 |
+| `SchoolToolsBoard-Plus-Desktop-x.y.z.w.zip` | 便携版，解压即用，适合拷到 U 盘带去教室 |
 
-- **书写**：时间笔锋（抬笔前笔尖继续生长至目标粗细）、双层画布增量重绘、4px 重采样 + 法线轮廓、荧光笔、手掌防误触。
-- **图形与数学**：8 种图形，手绘自动转标准图形（直线/三角形/矩形/圆/多边形）；自研表达式解析器与坐标系/函数图像共用换算。
-- **页面**：多页板书 + 缩略图栏、5 种背景、16:9 / 4:3 切换、80 步撤销、IndexedDB 自动保存。
-- **课堂工具（9 项）**：计时器、随机点名、聚光灯、遮罩揭幕、放大镜、板中板、导入 PDF、页面背景、快捷键说明。
-- **导出**：单页/全部 PNG、打印/PDF、`.inkboard` 工程、单页 SVG。
+系统要求：Windows 10 / 11（x64），.NET Framework 4.7.2 及以上（Win10 自带），建议 4GB 内存以上，触控一体机体验最佳。
 
-### 快捷键（Web 版）
+> 首次启动若被 SmartScreen 拦下，点「更多信息 → 仍要运行」；这是未购买代码签名证书的常见提示，不是文件损坏。
 
-| 键 | 功能 | 键 | 功能 |
-|---|---|---|---|
-| `P` | 钢笔 | `M` | 荧光笔 |
-| `E` | 橡皮 | `S` | 图形 |
-| `T` | 文本 | `V` | 选择 |
-| `L` | 激光笔 | `H` | 漫游 |
-| `空格`（按住） | 临时漫游 | `双指` | 缩放 / 平移 |
-| `Ctrl+Z` / `Ctrl+Y` | 撤销 / 重做 | `Ctrl+D` | 复制选中 |
-| `Ctrl+A` | 全选 | `Del` | 删除选中 |
-| `Ctrl+S` | 导出工程文件 | `←` `→` | 翻页 |
-| `F` | 全屏授课 | `Esc` | 收回工具 / 关弹窗 |
+## 更新说明
 
-## 构建与本地运行
+- **自动检查更新**：设置 → 关于 → 应用更新 → 「检查更新」，读取 `https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases/latest/download/version.xml`，有新版本会提示并给出安装包下载地址。
+- **手动更新**：直接下载新版本安装包覆盖安装即可，设置与墨迹文件都会保留。
+- **版本号规则**：`主版本.次版本.修订.构建`，课堂可用版为 `1.0.x.x`。
 
-Web 版无需依赖（不需要 npm install）：
+### 当前版本 1.0.1.6
 
-```bash
-node build.mjs                  # index.html + dist/stb-standalone.html
-python3 -m http.server 8123     # 本地预览：http://localhost:8123
-```
+- 修复调色盘选色后仍写黑笔的问题（根因是上游 `GetBaseColor` 把自定义色索引回落成黑色）
+- 彻底移除橡皮/画笔在笔尖处的蓝色圆框
+- 墨迹保存目录改为 `文档\SchoolToolsBoard\Strokes`，截图目录改为 `图片\SchoolToolsBoard\Screenshots`
+- 浮动栏「保存」按钮旁新增「保存到其它」，可另存到任意目录
+- 重写应用内更新说明与仓库主页文案
 
-桌面版（IC+ 底座）也是 CI 编，本地手动编需要 Windows + MSBuild（net472）：
+历史版本日志见 [Releases](https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/releases)。
 
-```bash
-git clone https://github.com/clover-tree/Ink-Canvas-Plus.git
-cd Ink-Canvas-Plus && nuget restore && msbuild "Ink Canvas.sln" -target:InkCanvasPlus -p:Configuration=Release -p:Platform="Any CPU"
-```
+## 与上游的关系
 
-正常情况下不用手编：改 `VERSION_PLUS` 就触发 `.github/workflows/release-plus.yml`；旧 ICC-CE 线仍由改 `VERSION` 触发 `release.yml`。
+- 上游：<https://github.com/clover-tree/Ink-Canvas-Plus>（GPL-3.0，作者 Clover Yan / XY Wang）
+- 本项目遵循 GPL-3.0，衍生分发需同样开源
+- 所有 STB 改动集中在 `stb-plus/`（补丁脚本与 `extra/` 覆盖文件），CI 顺序：上游源码 → 品牌补丁 → 板中板 → 外观 → 修正 → 编译 → 打包 → 发布
 
-## 目录结构
+## 反馈
 
-```
-SCHOOL_TOOLS_BOARD/
-├─ build.mjs                 # 零依赖构建脚本（Web 版）
-├─ VERSION_PLUS              # IC+ 主应用版本号（1.0.0.0），改动即触发 release-plus.yml
-├─ VERSION                   # ICC-CE 旧版版本号（v1.1.x）
-├─ RELEASE_NOTES_PLUS.md     # 当前主应用发布说明
-├─ stb-plus/                 # IC+ 底座补丁与 STB 主题字典
-│  ├─ apply-stb-plus-patches.ps1
-│  └─ Styles/{STBLight,STBDark}.xaml
-├─ icons/ · src/ · manifest.json · sw.js   # Web 版与 STB 图标
-└─ .github/workflows/
-   ├─ pages.yml               # Web 版构建并部署 Pages
-   ├─ release-plus.yml        # 主应用（IC+ 底座）发布
-   └─ release.yml             # ICC-CE 旧版发布（归档线）
-```
-
-## 在课堂一体机上用
-
-1. 下载 Release 里的 `SchoolToolsBoard-Setup-<版本>.exe` 双击安装（免安装取 `SchoolToolsBoard-Plus-Desktop-<版本>.zip`，解压后运行 `SchoolToolsBoard.exe`）。Windows 10 1903+；PPT 批注需本机装 PowerPoint。
-2. 装不了软件时：用一体机浏览器打开在线版，或把 `stb-standalone.html` 拷到 U 盘里双击。
-3. 点「全屏授课」进入沉浸模式。
-4. 想离线常驻：浏览器菜单「添加到主屏幕」即可安装为 PWA。
-
-## 与希沃白板的差距（实话实说）
-
-已覆盖：笔迹、荧光笔、橡皮、图形/函数、多页板书、时间机器、PPT 放映逐页批注、课堂工具（计时/点名/聚光灯/遮罩/放大镜/PDF 讲评）与一套自有的 STB 明暗双主题。
-
-**尚未覆盖**：**板中板**（IC+ 底座无此窗口，旧版 v1.1.5 仍有）、云账号与课件库、协同备课、微课录制、课堂活动（分组竞赛/抢答器）、截图提问、与教材资源打通。
-
-## 许可
-
-GPL-3.0-or-later，与上游 IC+ / ICC-CE 保持一致。完整许可原文：https://www.gnu.org/licenses/gpl-3.0.txt
-> 你可以自由使用、修改、再发布；修改后的作品需同样以 GPL-3.0 开源。
+- 提 Issue：<https://github.com/me13354091017/SCHOOL_TOOLS_BOARD/issues>
+- 母站（更多教学工具）：<https://me13354091017.github.io/school_tools/>
