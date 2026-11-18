@@ -14,13 +14,16 @@ function Assert([bool]$cond, [string]$msg) {
     if (-not $cond) { throw "ANCHOR FAIL: $msg" }
 }
 
-function Edit([string]$path, [string]$old, [string]$new, [string]$label) {
+function Edit([string]$path, [string]$old, [string]$new, [string]$label, [int]$times = 1) {
     Assert (Test-Path -LiteralPath $path) "$label :: file missing $path"
     $t = Get-Content -LiteralPath $path -Raw
-    Assert ($t.Contains($old)) "$label :: anchor not found"
-    $t = $t.Replace($old, $new)
-    [IO.File]::WriteAllText($path, $t, $utf8)
-    Write-Host ("PATCHED  " + $label)
+    $n = ([regex]::Matches($t, [regex]::Escape($old))).Count
+    Assert ($n -ge $times) "$label :: anchor not found (count=$n)"
+    if ($n -gt 0) {
+        $t = $t.Replace($old, $new)
+        [IO.File]::WriteAllText($path, $t, $utf8)
+    }
+    Write-Host ("PATCHED  " + $label + "  (x" + $n + ")")
 }
 
 try {
@@ -31,8 +34,8 @@ try {
     Edit $ring '            inkCanvas.Cursor = Cursors.None;' '            inkCanvas.Cursor = Cursors.Pen;' '黑板 橡皮光标恢复正常'
 
     $mbe = Join-Path $app 'MiniBoardWindow.Extras.cs'
-    Edit $mbe '            MiniEraserRing.Visibility = Visibility.Visible;' '            MiniEraserRing.Visibility = Visibility.Collapsed;' '板中板 橡皮圆环不显示'
-    Edit $mbe '            MiniInkCanvas.Cursor = Cursors.None;' '            MiniInkCanvas.Cursor = Cursors.Pen;' '板中板 橡皮光标恢复正常'
+    Edit $mbe '            MiniEraserRing.Visibility = Visibility.Visible;' '            MiniEraserRing.Visibility = Visibility.Collapsed;' '板中板 橡皮圆环不显示' 0
+    Edit $mbe '            MiniInkCanvas.Cursor = Cursors.None;' '            MiniInkCanvas.Cursor = Cursors.Pen;' '板中板 橡皮光标恢复正常' 0
 
     Write-Host "== PHASE F3: 设置页 橡皮擦大小 =="
     $eraserSrc = Join-Path $PSScriptRoot 'extra/StbSettingsWindow.Eraser.cs'
