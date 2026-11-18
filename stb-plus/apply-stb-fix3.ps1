@@ -2,6 +2,7 @@
 # 1.0.1.7：板中板橡皮大小改为单击直接弹滑杆、弹层不点外面不消失（StaysOpen=True）；
 # 把板中板的调色板/粗细能力带到 PPT（批注）模式的浮动栏。
 # 1.0.1.9：删除浮动栏上的「橡皮大小」按钮，并接入新的组件库（组件管理窗）。
+# 1.0.1.10：在尾部串接 fix4（快捷设置面板重排）。
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -93,6 +94,11 @@ try {
     Assert ((Select-String -LiteralPath $mw -Pattern 'x:Name="BorderPptEraser"' -Quiet) -eq $false) '浮动栏不应再有橡皮大小按钮'
     Assert ((Select-String -LiteralPath $mbx -Pattern 'StaysOpen="False"' -Quiet) -eq $false) '板中板弹层仍会点击即关'
     Write-Host 'OK  PHASE H 校验通过'
+
+    Write-Host "== PHASE Q: 快捷设置面板重排 =="
+    $fix4 = Join-Path $PSScriptRoot 'apply-stb-fix4.ps1'
+    Assert (Test-Path -LiteralPath $fix4) 'missing stb-plus/apply-stb-fix4.ps1'
+    & $fix4 -Root $Root -Version $Version
 }
 catch {
     Write-Host ("::error::STB fix3 failed: " + $_.Exception.Message)
