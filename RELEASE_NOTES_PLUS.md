@@ -1,22 +1,27 @@
-# SchoolToolsBoard 1.0.1.4
+# SchoolToolsBoard (STB) v1.0.1.5
 
-本版把「发行者」写进程序与安装包，并对运行时开销做了一轮减脂，同时修掉上一版遗留的两个小问题。
+> 底座：Ink Canvas Plus（clover-tree/Ink-Canvas-Plus，GPL-3.0）｜发行者：周之尧
 
-## 一、发行者：周之尧
-- 程序集元数据 `AssemblyCompany` 改为「周之尧」，右键 exe → 属性 → 详细信息里的「公司」一栏就是它。
-- 安装包 `AppPublisher` 改为「周之尧」，安装/卸载列表、安装向导弹头上都能看到。
-- 版权行写明：`Copyright © 周之尧 2026；上游 Ink Canvas Plus © Clover Yan 2025 / XY Wang 2023（GPL-3.0）`。
-- **安装目录不变**（仍为 `Program Files\SCHOOL_TOOLS\SchoolToolsBoard`），老版本可原地覆盖升级，不会装出两份。
+## 修复
 
-## 二、运行更快、更省
-- 修正 PPT 联动轮询的开销大头：原来每 300ms 会调两次 `Process.GetProcessesByName` 找到进程后用不释放，等于 3.3 次/秒的进程枚举 + 句柄泄漏。
-- 现在换为带 900ms 缓存的轻量判断，并逐个 `Dispose`，进程枚举开销降到原来的约 1/6，长时间开着不再累积句柄。
-- 配合上一版的「Office 不在就不碰 COM」，后台空转时几乎不占 CPU。
+### 1. 「画笔颜色 · 更多」调色盘能正常用了
+- 弹层原来靠 XAML 里的 `ElementName` 绑定找按钮，弹层自带独立名字域，绑定失效后就「跟着鼠标乱跑」，会压住浮动栏和画布。
+- 改为打开时由代码直接指定弹出锚点（贴在调色板图标正上方，水平居中），不再依赖绑定。
+- 选色改用弹层的 `PreviewMouseLeftButtonDown`：`StaysOpen=false` 的弹层会在点击瞬间先关闭，`MouseUp` 根本收不到，这是「点了没反应」的根因。
+- 点色块即时生效：直接改 `DefaultDrawingAttributes.Color`，并复用上游 `ColorSwitchCheck()` 收尾（笔迹模式、选中笔迹同步着色、快捷键色点状态重置）。
 
-## 三、修复
-- 板中板的「最大化」按钮改用矢量图标（浅绿 FullScreen），不再依赖系统字体里的方框字形——个别字体裁剪过的机器上不会再显示成空白按钮。
-- 上一版把橡皮圆环与图标尺寸统一之后，光标在橡皮与笔之间切换时立刻复位，不会出现「已经换回笔、光标却还是隐藏」的尴尬。
+### 2. 用橡皮不再有蓝色圈
+- 黑板、批注、板中板三处橡皮的「跟随笔尖蓝色圆框」全部去掉，光标恢复常规笔形。
 
-## 兼容性
-- 底座仍是 Ink Canvas Plus（上游源码未改动），继续 GPL-3.0。
-- 设置、组件、板中板、调色板、公告均与 1.0.1.3 一致，可直接覆盖安装。
+### 3. 设置页新增「橡皮擦大小」
+- 位置：设置 → 墨迹书写 → 笔迹宽度下方。
+- 形态：`－` / `＋` 两个按钮 + 中间实时显示当前直径（共 7 档：0.5× / 0.8× / 1.0× / 1.6× / 2.0× / 2.5× / 3.6×，即上游 `Settings.Canvas.EraserSize` 的 -2…4）。
+- 改完立刻生效（同步刷新 `inkCanvas.EraserShape`），无需重启；同时写入配置文件。
+
+## 安装说明
+- 覆盖安装即可，安装目录沿用 `Program Files\SCHOOL_TOOLS\SchoolToolsBoard`。
+- 便携版解压即用。
+
+## 开源
+- 上游：https://github.com/clover-tree/Ink-Canvas-Plus （GPL-3.0）
+- 本项目：https://github.com/me13354091017/SCHOOL_TOOLS_BOARD
