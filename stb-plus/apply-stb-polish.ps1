@@ -32,6 +32,11 @@ $iss = Join-Path $Root 'packaging/setup.iss'
 Edit $iss '#define MyAppPublisher "SCHOOL_TOOLS"' '#define MyAppPublisher "周之尧"' 'iss 发行者'
 Edit $iss 'DefaultDirName={autopf}\{#MyAppPublisher}\SchoolToolsBoard' 'DefaultDirName={autopf}\SCHOOL_TOOLS\SchoolToolsBoard' 'iss 安装目录保持原路径'
 
+# Inno Setup 需要 UTF-8 BOM 才能正确读中文发行者名
+$issText = Get-Content -LiteralPath $iss -Raw
+[IO.File]::WriteAllText($iss, $issText, (New-Object System.Text.UTF8Encoding($true)))
+Write-Host 'PATCHED  iss UTF-8 BOM'
+
 Write-Host "== PHASE P2: 性能（PPT 轮询只做轻量、带缓存的进程检查） =="
 $perfSrc = Join-Path $PSScriptRoot 'extra/MainWindow.Perf.cs'
 Assert (Test-Path -LiteralPath $perfSrc) 'missing source MainWindow.Perf.cs'
