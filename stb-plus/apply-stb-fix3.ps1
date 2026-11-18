@@ -3,6 +3,7 @@
 # 把板中板的调色板/粗细能力带到 PPT（批注）模式的浮动栏。
 # 1.0.1.9：删除浮动栏上的「橡皮大小」按钮，并接入新的组件库（组件管理窗）。
 # 1.0.1.10：在尾部串接 fix4（快捷设置面板重排）。
+# 1.0.1.11：在尾部再串 fix5（拖拽缩放与橡皮大小卡顿修复）。
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -99,6 +100,11 @@ try {
     $fix4 = Join-Path $PSScriptRoot 'apply-stb-fix4.ps1'
     Assert (Test-Path -LiteralPath $fix4) 'missing stb-plus/apply-stb-fix4.ps1'
     & $fix4 -Root $Root -Version $Version
+
+    Write-Host "== PHASE R: 缩放与橡皮卡顿修复 =="
+    $fix5 = Join-Path $PSScriptRoot 'apply-stb-fix5.ps1'
+    Assert (Test-Path -LiteralPath $fix5) 'missing stb-plus/apply-stb-fix5.ps1'
+    & $fix5 -Root $Root -Version $Version
 }
 catch {
     Write-Host ("::error::STB fix3 failed: " + $_.Exception.Message)
