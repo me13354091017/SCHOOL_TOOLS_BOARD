@@ -1,5 +1,5 @@
 # apply-stb-components.ps1
-# PHASE N：组件系统（ICCCE 风格）+ 浮动栏重绘 + 设置页「退出/重启应用」+ PPT 灵敏度（N7）+ 浮动栏调色板（N8）。
+# PHASE N：组件系统（ICCCE 风格）+ 浮动栏重绘 + 设置页「退出/重启应用」+ PPT 灵敏度（N7）+ 浮动栏调色板（N8）+ 橡皮圆环与图标统一（N9）+ 板中板（N10）。
 # 由 apply-stb-miniboard.ps1 末尾串联，在 PHASE L / M 之后执行。
 param(
     [string]$Root = "plus-src",
@@ -30,7 +30,7 @@ $setXaml = Join-Path $app 'StbSettingsWindow.xaml'
 $setCs = Join-Path $app 'StbSettingsWindow.xaml.cs'
 
 Write-Host "== PHASE N1: 拷入组件系统文件 =="
-foreach ($f in @('StbComponents.cs', 'StbComponentWindow.xaml', 'StbComponentWindow.xaml.cs', 'StbComponentDock.xaml', 'StbComponentDock.xaml.cs', 'MainWindow.Components.cs', 'MiniBoardWindow.Pens.cs', 'MainWindow.PenPalette.cs')) {
+foreach ($f in @('StbComponents.cs', 'StbComponentWindow.xaml', 'StbComponentWindow.xaml.cs', 'StbComponentDock.xaml', 'StbComponentDock.xaml.cs', 'MainWindow.Components.cs', 'MiniBoardWindow.Pens.cs', 'MainWindow.PenPalette.cs', 'MainWindow.EraserRing.cs', 'MiniBoardWindow.Extras.cs')) {
     $src = Join-Path $extra $f
     Assert (Test-Path -LiteralPath $src) "missing source $f"
     Copy-Item -LiteralPath $src -Destination $app -Force
@@ -123,7 +123,7 @@ Edit $mwCs 'timerCheckPPT.Interval = 1000;' 'timerCheckPPT.Interval = 300;' 'PPT
 
 $mps = Join-Path $app 'MainWindow.PresentationAndSettings.cs'
 $pptGuardOld = 'if (IsShowingRestoreHiddenSlidesWindow) return;'
-$pptGuardNew = $pptGuardOld + $NL + '                if (Process.GetProcessesByName("POWERPNT").Length == 0 && Process.GetProcessesByName("wpp").Length == 0) return;'
+$pptGuardNew = $pptGuardOld + $NL + '                if (Process.GetProcessesByName("POWERPNT").Length -eq 0 -and Process.GetProcessesByName("wpp").Length -eq 0) return;'
 Edit $mps $pptGuardOld $pptGuardNew 'PPT 轮询先判断进程（省掉 COM 空转）'
 
 Write-Host "== PHASE N8: 浮动栏「更多颜色」调色板（图标尺寸对齐 15） =="
@@ -179,6 +179,66 @@ $cursorOld = '<controls:ClickSensitiveGrid Click="SymbolIconCursor_Click" Margin
 $cursorNew = '<controls:ClickSensitiveGrid Click="SymbolIconCursor_Click" Margin="-10,0,0,0">' + $lf + '                                <Viewbox Width="15" Height="15" HorizontalAlignment="Center">' + $lf + '                                    <ui:SymbolIcon Symbol="Edit" Foreground="{DynamicResource FloatBarForeground}" />' + $lf + '                                </Viewbox>' + $lf + '                            </controls:ClickSensitiveGrid>'
 Edit $mw $cursorOld $cursorNew '图标尺寸对齐: 光标/笔'
 
+Write-Host "== PHASE N9: 橡皮跟随圆环 + 调色板图标可见化 + 色点/荧光笔统一 16 =="
+Edit $mw 'PlacementTarget="{Binding ElementName=FontIconPenPalette}"' 'PlacementTarget="{Binding ElementName=BorderPenPalette}"' '调色板 Popup 指向新图标'
+
+$penIconOld = '<Viewbox Width="15" Height="15" HorizontalAlignment="Center">' + $lf + '                                <ui:FontIcon Name="FontIconPenPalette" Glyph="&#xE790;" Cursor="Hand"' + $lf + '                                             Foreground="{DynamicResource FloatBarForeground}"' + $lf + '                                             ToolTip="更多画笔颜色" MouseUp="FontIconPenPalette_MouseUp" />' + $lf + '</Viewbox>'
+$penIconNewLines = @(
+    '<Border x:Name="BorderPenPalette" Width="16" Height="16" CornerRadius="4" Background="#33FFFFFF"',
+    '                    BorderBrush="#59FFFFFF" BorderThickness="1" Cursor="Hand" VerticalAlignment="Center"',
+    '                    ToolTip="更多画笔颜色（点开选 12 色）" MouseUp="BorderPenPalette_MouseUp">',
+    '                <UniformGrid Columns="2" Rows="2" Margin="1">',
+    '                    <Border Background="#FFD32F2F" CornerRadius="2,0,0,0" Margin="0,0,1,1" />',
+    '                    <Border Background="#FF1F6FC4" CornerRadius="0,2,0,0" Margin="0,0,0,1" />',
+    '                    <Border Background="#FFF7C948" CornerRadius="0,0,0,2" Margin="0,0,1,0" />',
+    '                    <Border Background="#FF2E9E5B" CornerRadius="0,0,2,0" />',
+    '                </UniformGrid>',
+    '            </Border>'
+)
+$penIconNew = ($penIconNewLines -join $lf) + $lf + '                            '
+Edit $mw $penIconOld $penIconNew '调色板图标换成四色小方块'
+
+Edit $mw 'Margin="-2.5" Source="{DynamicResource DrawShapeImageSource.DrawShapeIcon}"' 'Margin="-2.5" Width="16" Height="16" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Source="{DynamicResource DrawShapeImageSource.DrawShapeIcon}"' '图形入口图标统一 16'
+
+Edit $mw 'Spacing="8" Margin="0,1">' 'Spacing="6" Margin="0,1" Height="16" VerticalAlignment="Center">' '色点与荧光笔统一 16'
+
+Edit $mw 'MouseMove="inkCanvas_MouseMove"' 'MouseMove="inkCanvas_MouseMove" PreviewMouseMove="StbEraserRing_MouseMove"' '画布挂橡皮圆环移动'
+Edit $mw 'MouseUp="inkCanvas_MouseUp"' 'MouseUp="inkCanvas_MouseUp" MouseLeave="StbEraserRing_MouseLeave"' '画布挂橡皮圆环离开'
+
+$ringLines = @(
+    '        <Canvas x:Name="StbRingLayer" Panel.ZIndex="2000" IsHitTestVisible="False" ClipToBounds="True">',
+    '            <Ellipse x:Name="StbEraserRing" Visibility="Collapsed" Fill="#26FFFFFF"',
+    '                     Stroke="#CC1F6FC4" StrokeThickness="1.5" />',
+    '        </Canvas>'
+)
+$ring = $ringLines -join $lf
+Edit $mw '        </InkCanvas>' ('        </InkCanvas>' + $lf + $ring) '橡皮跟随圆环'
+
+Write-Host "== PHASE N10: 板中板（橡皮圆环 / 最大化 / 拖动条不再触发缩放） =="
+$mbXaml = Join-Path $app 'MiniBoardWindow.xaml'
+Edit $mbXaml 'MouseLeftButtonDown="RootGrid_MouseLeftButtonDown"' 'PreviewMouseLeftButtonDown="StbRootGrid_PreviewMouseLeftButtonDown"' '板中板 缩放判定改走 Preview（不抢标题栏拖动）'
+
+$mbInkOld = '<InkCanvas x:Name="MiniInkCanvas" Background="Transparent" EditingMode="Ink" />'
+$mbInkLines = @(
+    '<InkCanvas x:Name="MiniInkCanvas" Background="Transparent" EditingMode="Ink"',
+    '                          MouseMove="MiniInkCanvas_MouseMove" MouseLeave="MiniInkCanvas_MouseLeave" />',
+    '<Canvas x:Name="MiniRingLayer" Panel.ZIndex="50" IsHitTestVisible="False" ClipToBounds="True">',
+    '    <Ellipse x:Name="MiniEraserRing" Visibility="Collapsed" Fill="#26FFFFFF"',
+    '             Stroke="#CC1F6FC4" StrokeThickness="1.5" />',
+    '</Canvas>'
+)
+Edit $mbXaml $mbInkOld ($mbInkLines -join $NL) '板中板 橡皮圆环'
+
+$mbBtnAnchor = '                            <Button x:Name="BtnMBCollapse" Style="{StaticResource MBBarBtn}"'
+$mbMaxBtn = @'
+<Button x:Name="BtnMBMax" Style="{StaticResource MBBarBtn}" Click="BtnMBMax_Click" ToolTip="最大化（铺满屏幕工作区）/ 再点还原">
+                                <TextBlock Text="⛶" FontSize="11" Foreground="#FFE8EBEF" />
+                            </Button>
+'@
+Edit $mbXaml $mbBtnAnchor ($mbMaxBtn.Trim("`r", "`n") + $NL + $mbBtnAnchor) '板中板 最大化按钮'
+
+Write-Host 'OK  PHASE N10 校验通过'
+
 Write-Host "== PHASE N6: 断言 =="
 Assert (Select-String -LiteralPath $mw -Pattern 'MouseUp="SymbolIconComponents_MouseUp"' -Quiet) '浮动栏组件入口未插入'
 Assert (Select-String -LiteralPath $mw -Pattern 'Click="BtnComponents_Click"' -Quiet) '左栏组件按钮未插入'
@@ -189,10 +249,16 @@ Assert (Select-String -LiteralPath $setCs -Pattern 'BtnExitApp_Click' -Quiet) '�
 Assert (Test-Path -LiteralPath (Join-Path $app 'StbComponents.cs')) '组件源码未拷入'
 Assert (Test-Path -LiteralPath (Join-Path $app 'MiniBoardWindow.Pens.cs')) '板中板调色板代码未拷入'
 Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.xaml.cs') -Pattern 'timerCheckPPT.Interval = 300;' -Quiet) 'PPT 轮询间隔未改'
-Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.PresentationAndSettings.cs') -Pattern 'GetProcessesByName\("POWERPNT"\)' -Quiet) 'PPT 进程预判未插入'
+Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.PresentationAndSettings.cs') -Pattern 'GetProcessesByName\\("POWERPNT"\\)' -Quiet) 'PPT 进程预判未插入'
 Assert (Select-String -LiteralPath $mw -Pattern 'PopupPenPalette' -Quiet) '浮动栏调色板 Popup 未插入'
-Assert (Select-String -LiteralPath $mw -Pattern 'FontIconPenPalette' -Quiet) '浮动栏调色板图标未插入'
+Assert (Select-String -LiteralPath $mw -Pattern 'BorderPenPalette' -Quiet) '浮动栏调色板图标未插入'
+Assert (Select-String -LiteralPath $mw -Pattern 'StbEraserRing' -Quiet) '橡皮圆环未插入'
+Assert (Test-Path -LiteralPath (Join-Path $app 'MainWindow.EraserRing.cs')) '橡皮圆环代码未拷入'
 Assert (Test-Path -LiteralPath (Join-Path $app 'MainWindow.PenPalette.cs')) '调色板处理代码未拷入'
+Assert (Select-String -LiteralPath (Join-Path $app 'MiniBoardWindow.xaml') -Pattern 'MiniEraserRing' -Quiet) '板中板橡皮圆环未插入'
+Assert (Select-String -LiteralPath (Join-Path $app 'MiniBoardWindow.xaml') -Pattern 'BtnMBMax_Click' -Quiet) '板中板最大化按钮未插入'
+Assert (Select-String -LiteralPath (Join-Path $app 'MiniBoardWindow.xaml') -Pattern 'StbRootGrid_PreviewMouseLeftButtonDown' -Quiet) '板中板缩放判定未替换'
+Assert (Test-Path -LiteralPath (Join-Path $app 'MiniBoardWindow.Extras.cs')) '板中板补充代码未拷入'
 Write-Host 'OK  PHASE N 校验通过'
 
 Write-Host "STB COMPONENTS PATCHES DONE"

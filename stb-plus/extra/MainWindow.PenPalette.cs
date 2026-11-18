@@ -13,7 +13,7 @@ namespace InkCanvasPlus
     /// </summary>
     public partial class MainWindow
     {
-        private void FontIconPenPalette_MouseUp(object sender, MouseButtonEventArgs e)
+        private void BorderPenPalette_MouseUp(object sender, MouseButtonEventArgs e)
         {
             bool willOpen = !PopupPenPalette.IsOpen;
             if (willOpen)
