@@ -70,6 +70,12 @@ jobs:
           $ver = (Get-Content VERSION_PLUS -Raw).Trim()
           ./stb-plus/apply-stb-polish.ps1 -Root plus-src -Version "$ver"
 
+      - name: Apply STB fix patch
+        shell: pwsh
+        run: |
+          $ver = (Get-Content VERSION_PLUS -Raw).Trim()
+          ./stb-plus/apply-stb-fix.ps1 -Root plus-src -Version "$ver"
+
       - name: Build icon
         shell: pwsh
         run: |
