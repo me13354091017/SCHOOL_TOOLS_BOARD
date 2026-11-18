@@ -27,8 +27,15 @@ function Find-BlockEnd([string]$text, [int]$start) {
         if ($c -lt 0) { throw 'unclosed Border block' }
         if ($o -ge 0 -and $o -lt $c) {
             $ch = $text.Substring($o + 7, 1)
-            if ($ch -eq ' ' -or $ch -eq '>' -or $ch -eq '/') { $depth++ }
-            $i = $o + 7
+            if ($ch -match '[\s/>]') {
+                $gt = $text.IndexOf('>', $o)
+                if ($gt -lt 0) { throw 'bad Border tag' }
+                $prev = $text.Substring($gt - 1, 1)
+                if ($prev -ne '/') { $depth++ }
+                $i = $gt + 1
+            } else {
+                $i = $o + 7
+            }
         } else {
             $depth--
             $i = $c + 9
