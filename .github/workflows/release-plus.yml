@@ -59,10 +59,16 @@ jobs:
           ./stb-plus/apply-stb-plus-patches.ps1 -Root plus-src -Version "$ver"
 
       - name: Apply STB mini board patch
-        shell: pwsh
+        shell: pwwsh
         run: |
           $ver = (Get-Content VERSION_PLUS -Raw).Trim()
           ./stb-plus/apply-stb-miniboard.ps1 -Root plus-src -Version "$ver"
+
+      - name: Apply STB polish patch
+        shell: pwsh
+        run: |
+          $ver = (Get-Content VERSION_PLUS -Raw).Trim()
+          ./stb-plus/apply-stb-polish.ps1 -Root plus-src -Version "$ver"
 
       - name: Build icon
         shell: pwsh
