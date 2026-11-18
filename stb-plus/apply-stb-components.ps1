@@ -126,7 +126,7 @@ $pptGuardOld = 'if (IsShowingRestoreHiddenSlidesWindow) return;'
 $pptGuardNew = $pptGuardOld + $NL + '                if (Process.GetProcessesByName("POWERPNT").Length == 0 && Process.GetProcessesByName("wpp").Length == 0) return;'
 Edit $mps $pptGuardOld $pptGuardNew 'PPT 轮询先判断进程（省掉 COM 空转）'
 
-Write-Host "== PHASE N8: 浮动栏「更多颜色」调色板 + 统一图标尺寸 =="
+Write-Host "== PHASE N8: 浮动栏「更多颜色」调色板（图标尺寸对齐 15） =="
 $penPopupLines = @(
     '<Popup x:Name="PopupPenPalette" PlacementTarget="{Binding ElementName=FontIconPenPalette}" Placement="Bottom"',
     '               StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade" VerticalOffset="6">',
@@ -156,24 +156,28 @@ $penPopup = ($penPopupLines -join $NL) + $NL + '        '
 Edit $mw '<Viewbox Name="ViewboxFloatingBar"' ($penPopup + '<Viewbox Name="ViewboxFloatingBar"') 'floatbar 更多颜色 Popup'
 
 $penIconLines = @(
-    '<ui:FontIcon Name="FontIconPenPalette" Glyph="&#xE790;" FontSize="18" Cursor="Hand"',
-    '                                         Foreground="{DynamicResource FloatBarForeground}"',
-    '                                         ToolTip="更多画笔颜色" MouseUp="FontIconPenPalette_MouseUp" />'
+    '<Viewbox Width="15" Height="15" HorizontalAlignment="Center">',
+    '                                <ui:FontIcon Name="FontIconPenPalette" Glyph="&#xE790;" Cursor="Hand"',
+    '                                             Foreground="{DynamicResource FloatBarForeground}"',
+    '                                             ToolTip="更多画笔颜色" MouseUp="FontIconPenPalette_MouseUp" />',
+    '</Viewbox>'
 )
 $penIcon = ($penIconLines -join $NL) + $NL + '                            '
 $colorGroup = '<ui:SimpleStackPanel Orientation="{Binding ElementName=StackPanelFloatingBar, Path=Orientation}" Spacing="8" Margin="0,1">'
 Edit $mw $colorGroup ($penIcon + $colorGroup) 'floatbar 调色板图标'
 
-Edit $mw '<ui:SymbolIcon Symbol="Setting" Foreground="{DynamicResource FloatBarForeground}" MouseUp="SymbolIconSettings_Click" />' '<ui:SymbolIcon Symbol="Setting" FontSize="18" Foreground="{DynamicResource FloatBarForeground}" MouseUp="SymbolIconSettings_Click" />' '统一图标尺寸: 设置'
-Edit $mw '<ui:SymbolIcon Symbol="TouchPointer" Foreground="{DynamicResource FloatBarForeground}" />' '<ui:SymbolIcon Symbol="TouchPointer" FontSize="18" Foreground="{DynamicResource FloatBarForeground}" />' '统一图标尺寸: 触控'
+# 触控图标：包进 15 的 Viewbox，与「设置」「板中板」（M1/M2 已包 15）对齐
+$touchOld = '<ui:SymbolIcon Symbol="TouchPointer" Foreground="{DynamicResource FloatBarForeground}" />'
+$touchNew = '<Viewbox Width="15" Height="15" HorizontalAlignment="Center">' + $NL + '                                    <ui:SymbolIcon Symbol="TouchPointer" Foreground="{DynamicResource FloatBarForeground}" />' + $NL + '                                </Viewbox>'
+Edit $mw $touchOld $touchNew '图标尺寸对齐: 触控'
 
-# 光标图标块含换行，先把 MainWindow.xaml 统一成 LF 再改，避免 CRLF/LF 差异导致锚点落空
+# 光标/笔图标同样包 15。该块跨行，先把 MainWindow.xaml 归一化为 LF 再改，避免 CRLF/LF 差异导致锚点落空
 $tmpMw = [IO.File]::ReadAllText($mw) -replace "`r`n", "`n"
 [IO.File]::WriteAllText($mw, $tmpMw, $utf8)
 $lf = "`n"
 $cursorOld = '<controls:ClickSensitiveGrid Click="SymbolIconCursor_Click" Margin="-10,0,0,0">' + $lf + '                                <ui:SymbolIcon Symbol="Edit" Foreground="{DynamicResource FloatBarForeground}" />' + $lf + '                            </controls:ClickSensitiveGrid>'
-$cursorNew = '<controls:ClickSensitiveGrid Click="SymbolIconCursor_Click" Margin="-10,0,0,0">' + $lf + '                                <ui:SymbolIcon Symbol="Edit" FontSize="18" Foreground="{DynamicResource FloatBarForeground}" />' + $lf + '                            </controls:ClickSensitiveGrid>'
-Edit $mw $cursorOld $cursorNew '统一图标尺寸: 光标/笔'
+$cursorNew = '<controls:ClickSensitiveGrid Click="SymbolIconCursor_Click" Margin="-10,0,0,0">' + $lf + '                                <Viewbox Width="15" Height="15" HorizontalAlignment="Center">' + $lf + '                                    <ui:SymbolIcon Symbol="Edit" Foreground="{DynamicResource FloatBarForeground}" />' + $lf + '                                </Viewbox>' + $lf + '                            </controls:ClickSensitiveGrid>'
+Edit $mw $cursorOld $cursorNew '图标尺寸对齐: 光标/笔'
 
 Write-Host "== PHASE N6: 断言 =="
 Assert (Select-String -LiteralPath $mw -Pattern 'MouseUp="SymbolIconComponents_MouseUp"' -Quiet) '浮动栏组件入口未插入'
