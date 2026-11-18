@@ -123,7 +123,7 @@ Edit $mwCs 'timerCheckPPT.Interval = 1000;' 'timerCheckPPT.Interval = 300;' 'PPT
 
 $mps = Join-Path $app 'MainWindow.PresentationAndSettings.cs'
 $pptGuardOld = 'if (IsShowingRestoreHiddenSlidesWindow) return;'
-$pptGuardNew = $pptGuardOld + $NL + '                if (Process.GetProcessesByName("POWERPNT").Length -eq 0 -and Process.GetProcessesByName("wpp").Length -eq 0) return;'
+$pptGuardNew = $pptGuardOld + $NL + '                if (Process.GetProcessesByName("POWERPNT").Length == 0 && Process.GetProcessesByName("wpp").Length == 0) return;'
 Edit $mps $pptGuardOld $pptGuardNew 'PPT 轮询先判断进程（省掉 COM 空转）'
 
 Write-Host "== PHASE N8: 浮动栏「更多颜色」调色板（图标尺寸对齐 15） =="
@@ -249,7 +249,7 @@ Assert (Select-String -LiteralPath $setCs -Pattern 'BtnExitApp_Click' -Quiet) '�
 Assert (Test-Path -LiteralPath (Join-Path $app 'StbComponents.cs')) '组件源码未拷入'
 Assert (Test-Path -LiteralPath (Join-Path $app 'MiniBoardWindow.Pens.cs')) '板中板调色板代码未拷入'
 Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.xaml.cs') -Pattern 'timerCheckPPT.Interval = 300;' -Quiet) 'PPT 轮询间隔未改'
-Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.PresentationAndSettings.cs') -Pattern 'GetProcessesByName\\("POWERPNT"\\)' -Quiet) 'PPT 进程预判未插入'
+Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.PresentationAndSettings.cs') -Pattern 'GetProcessesByName\("POWERPNT"\)' -Quiet) 'PPT 进程预判未插入'
 Assert (Select-String -LiteralPath $mw -Pattern 'PopupPenPalette' -Quiet) '浮动栏调色板 Popup 未插入'
 Assert (Select-String -LiteralPath $mw -Pattern 'BorderPenPalette' -Quiet) '浮动栏调色板图标未插入'
 Assert (Select-String -LiteralPath $mw -Pattern 'StbEraserRing' -Quiet) '橡皮圆环未插入'
