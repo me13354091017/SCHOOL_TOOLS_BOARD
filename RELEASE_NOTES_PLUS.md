@@ -1,22 +1,20 @@
-# SchoolToolsBoard (STB) v1.0.1.13
+# SchoolToolsBoard (STB) v1.0.1.14
 
 > 底座：Ink Canvas Plus（clover-tree/Ink-Canvas-Plus，GPL-3.0）｜发行者：周之尧
 
-## 新增：橡皮自动回笔
-擦掉笔迹后自动切回书写，不用再手动点橡皮关闭。覆盖三处：
-- 主窗口黑板 / 白板（`inkCanvas`）
-- PPT / 批注模式（同一个画布，同样生效）
-- 板中板（`MiniInkCanvas`），回笔时同时收起橡皮大小条
+## 修：橡皮一碰墨迹就变书写
 
-只在橡皮模式下生效：判断依据是画布 `EditingMode` 处于 `EraseByPoint` / `EraseByStroke`，并监听 `Strokes.StrokesChanged` 中 `Removed.Count > 0`（点擦拆分笔迹也算），切换任务走 `DispatcherPriority.Input`，不阻塞当前擦除手势。
+上一版把“自动回笔”直接挂在 `StrokesChanged` 上，只要有一次笔迹被删除就立刻切回 `Ink`。
+问题在于 `EraseByStroke`（整笔擦）是**按下即删**：手指落下的瞬间笔迹已被移除，于是模式立刻变回书写，后续拖动画出新笔迹——“橡皮碰到墨迹就变成书写”就是这么来的。
 
-## 修复：板中板橡皮条一点就没
-原因在 `StbRootGrid_PreviewMouseLeftButtonDown`：它无条件 `CloseMiniPopups()`，然后把这次点击当作“点画布”处理。橡皮条 1.0.1.12 改成窗内面板之后，点条内部（包括拖滑杆）都会命中这段逻辑，于是面板刚展开就收起，看起来像“一拖就消失”。
+现在改成两段式：
+1. `StrokesChanged` 只置一个 `_stbErasedInGesture` 标记（“这一笔擦到东西了”）；
+2. 在 `PreviewStylusUp` / `PreviewMouseUp`（用 `AddHandler(..., true)`，即使被内部占用也能收到）里才把标记转成真正的回笔。
 
-现在先判断点击是否落在 `InlineEraserPanel` 内部：在内则保留面板并直接返回（也不参与四边四角缩放判定），在外仍然按原逻辑收起。
+这样擦除手势全程都是橡皮，抬手后才回笔，与希沃手感一致。主窗口与板中板各一套，逻辑一致。
 
 ## 保留
-- 橡皮条窗内嵌、直径松手生效
+- 板中板橡皮条窗内嵌，点条内不再被“点画布收起”误杀
 - 拖拽角缩放 40ms 节流
 - 快捷设置面板新排版、另存为独立图标、透明底图标
 
