@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace InkCanvasPlus
 {
@@ -14,6 +15,23 @@ namespace InkCanvasPlus
     public partial class MainWindow
     {
         private double _pptEraserPx = 14d;
+        private DispatcherTimer _pptEraserTimer;
+
+        private void QueuePptEraserApply()
+        {
+            if (_pptEraserTimer == null)
+            {
+                _pptEraserTimer = new DispatcherTimer();
+                _pptEraserTimer.Interval = TimeSpan.FromMilliseconds(160);
+                _pptEraserTimer.Tick += (s, e) =>
+                {
+                    _pptEraserTimer.Stop();
+                    ApplyPptEraserShape();
+                };
+            }
+            _pptEraserTimer.Stop();
+            _pptEraserTimer.Start();
+        }
 
         private void SliderPptPenWidth_Loaded(object sender, RoutedEventArgs e)
         {
@@ -31,7 +49,12 @@ namespace InkCanvasPlus
             {
                 return;
             }
-            InkWidthSlider.Value = Math.Max(1d, Math.Min(20d, e.NewValue));
+            double target = Math.Max(1d, Math.Min(20d, Math.Round(e.NewValue)));
+            if (Math.Abs(InkWidthSlider.Value - target) < 0.01d)
+            {
+                return;
+            }
+            InkWidthSlider.Value = target;
         }
 
         private void SliderPptEraser_Loaded(object sender, RoutedEventArgs e)
@@ -46,12 +69,16 @@ namespace InkCanvasPlus
 
         private void SliderPptEraser_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            double v = e.NewValue;
+            double v = Math.Round(e.NewValue);
             if (v < 4d) v = 4d;
             if (v > 60d) v = 60d;
+            if (Math.Abs(_pptEraserPx - v) < 0.01d)
+            {
+                return;
+            }
             _pptEraserPx = v;
-            ApplyPptEraserShape();
             UpdatePptEraserInfo();
+            QueuePptEraserApply();
         }
 
         private void BorderPptEraser_MouseUp(object sender, MouseButtonEventArgs e)

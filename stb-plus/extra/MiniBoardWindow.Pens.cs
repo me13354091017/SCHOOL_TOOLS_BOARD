@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace InkCanvasPlus
 {
@@ -17,6 +18,24 @@ namespace InkCanvasPlus
     {
         private int _eraserSize = 14;
         private bool _syncingPenUi = false;
+        private DispatcherTimer _eraserApplyTimer;
+
+        /// <summary>拖滑杆时只记数值，停手后再重建 EraserShape，避免每一格都重建导致卡顿。</summary>
+        private void QueueEraserApply()
+        {
+            if (_eraserApplyTimer == null)
+            {
+                _eraserApplyTimer = new DispatcherTimer();
+                _eraserApplyTimer.Interval = TimeSpan.FromMilliseconds(160);
+                _eraserApplyTimer.Tick += (s, e) =>
+                {
+                    _eraserApplyTimer.Stop();
+                    ApplyEraserShape();
+                };
+            }
+            _eraserApplyTimer.Stop();
+            _eraserApplyTimer.Start();
+        }
 
         /// <summary>关闭笔 / 橡皮两个弹层（点画布空白处时调用）。</summary>
         private void CloseMiniPopups()
@@ -154,6 +173,10 @@ namespace InkCanvasPlus
             int v = (int)Math.Round(e.NewValue);
             if (v < MinPenLevel) v = MinPenLevel;
             if (v > MaxPenLevel) v = MaxPenLevel;
+            if (v == _penLevel)
+            {
+                return;
+            }
             _penLevel = v;
             UpdateWidthLabel();
             UpdatePenInfo();
@@ -165,9 +188,13 @@ namespace InkCanvasPlus
             int v = (int)Math.Round(e.NewValue);
             if (v < 4) v = 4;
             if (v > 60) v = 60;
+            if (v == _eraserSize)
+            {
+                return;
+            }
             _eraserSize = v;
             UpdateEraserInfo();
-            ApplyEraserShape();
+            QueueEraserApply();
         }
     }
 }
