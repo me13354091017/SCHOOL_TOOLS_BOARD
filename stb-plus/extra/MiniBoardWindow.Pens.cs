@@ -11,7 +11,9 @@ namespace InkCanvasPlus
     /// <summary>
     /// 板中板画笔 / 橡皮的交互扩展（partial 文件，不改动 MiniBoardWindow.xaml.cs 原有代码）：
     ///   · 单击「笔」→ 弹出调色板（12 色）+ 粗细滑杆（1–20 档，实际笔宽 = 档位 / 2）
-    ///   · 单击「橡皮」→ 切到点擦，同时直接弹出橡皮大小滑杆（4–60），点画布自动收起
+    ///   · 单击「橡皮」→ 切到点擦，并在板中板窗口内展开橡皮大小条（4–60）
+    ///     不再使用 Popup：板中板本身是透明分层窗口，Popup 又是另一个分层窗口，
+    ///     拖动滑杆时两层都要重绘，正是“拖动橡皮调节条就闪断 / 卡死”的来源。
     /// 颜色、橡皮尺寸都与主界面同一套观感。
     /// </summary>
     public partial class MiniBoardWindow
@@ -19,6 +21,8 @@ namespace InkCanvasPlus
         private int _eraserSize = 14;
         private bool _syncingPenUi = false;
         private DispatcherTimer _eraserApplyTimer;
+        private EllipseStylusShape _eraserShapeCache;
+        private int _eraserShapeCacheSize = -1;
 
         /// <summary>拖滑杆时只记数值，停手后再重建 EraserShape，避免每一格都重建导致卡顿。</summary>
         private void QueueEraserApply()
@@ -37,16 +41,30 @@ namespace InkCanvasPlus
             _eraserApplyTimer.Start();
         }
 
-        /// <summary>关闭笔 / 橡皮两个弹层（点画布空白处时调用）。</summary>
+        /// <summary>关闭笔弹层与窗内橡皮条（点画布空白处时调用）。</summary>
         private void CloseMiniPopups()
         {
             if (PopupPen != null)
             {
                 PopupPen.IsOpen = false;
             }
-            if (PopupEraser != null)
+            SetEraserPanel(false);
+        }
+
+        /// <summary>窗内橡皮大小条：不走 Popup，直接在板中板窗口里展开 / 收起。</summary>
+        private void SetEraserPanel(bool open)
+        {
+            if (InlineEraserPanel != null)
             {
-                PopupEraser.IsOpen = false;
+                InlineEraserPanel.Visibility = open ? Visibility.Visible : Visibility.Collapsed;
+            }
+        }
+
+        private bool IsEraserPanelOpen
+        {
+            get
+            {
+                return InlineEraserPanel != null && InlineEraserPanel.Visibility == Visibility.Visible;
             }
         }
 
@@ -54,10 +72,7 @@ namespace InkCanvasPlus
         private void BtnMBInkPanel_Click(object sender, RoutedEventArgs e)
         {
             ApplyPen();
-            if (PopupEraser != null)
-            {
-                PopupEraser.IsOpen = false;
-            }
+            SetEraserPanel(false);
             bool willOpen = PopupPen != null && !PopupPen.IsOpen;
             if (willOpen)
             {
@@ -69,7 +84,7 @@ namespace InkCanvasPlus
             }
         }
 
-        /// <summary>单击「橡皮」：切到点擦，并直接弹出橡皮大小滑杆；再点一次收起（大小已实时生效）。</summary>
+        /// <summary>单击「橡皮」：切到点擦，并展开橡皮大小条；再点一次收起（大小松手生效）。</summary>
         private void BtnMBEraserPanel_Click(object sender, RoutedEventArgs e)
         {
             if (PopupPen != null)
@@ -81,10 +96,7 @@ namespace InkCanvasPlus
             ApplyEraserShape();
             SyncEraserUi();
 
-            if (PopupEraser != null)
-            {
-                PopupEraser.IsOpen = !PopupEraser.IsOpen;
-            }
+            SetEraserPanel(!IsEraserPanelOpen);
         }
 
         /// <summary>调色板里点某个颜色：换成该色、收起面板、回到书写。</summary>
@@ -119,7 +131,16 @@ namespace InkCanvasPlus
         {
             try
             {
-                MiniInkCanvas.EraserShape = new EllipseStylusShape(_eraserSize, _eraserSize);
+                if (_eraserSize < 4)
+                {
+                    return;
+                }
+                if (_eraserShapeCache == null || _eraserShapeCacheSize != _eraserSize)
+                {
+                    _eraserShapeCache = new EllipseStylusShape(_eraserSize, _eraserSize);
+                    _eraserShapeCacheSize = _eraserSize;
+                }
+                MiniInkCanvas.EraserShape = _eraserShapeCache;
             }
             catch
             {
@@ -173,10 +194,6 @@ namespace InkCanvasPlus
             int v = (int)Math.Round(e.NewValue);
             if (v < MinPenLevel) v = MinPenLevel;
             if (v > MaxPenLevel) v = MaxPenLevel;
-            if (v == _penLevel)
-            {
-                return;
-            }
             _penLevel = v;
             UpdateWidthLabel();
             UpdatePenInfo();
