@@ -19,5 +19,14 @@ namespace InkCanvasPlus
         {
             StbComponentManagerWindow.ShowFor(this);
         }
+
+        /// <summary>
+        /// 旧版组件面板入口（1.0.1.9 起由组件管理窗接管）。
+        /// 保留为可回退的独立方法，不再绑定任何按钮。
+        /// </summary>
+        private void ShowComponentDockLegacy()
+        {
+            StbComponentDock.ShowFor(this);
+        }
     }
 }
