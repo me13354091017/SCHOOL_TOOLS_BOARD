@@ -1,5 +1,6 @@
 # apply-stb-fix6.ps1
 # 1.0.1.12：板中板橡皮大小条改为窗口内嵌（去掉 Popup）
+# 1.0.1.13：尾部串接 fix7（橡皮自动回笔）
 #   板中板是 AllowsTransparency 的分层窗口，橡皮大小条原先用 Popup（又是一个分层窗口），
 #   拖动滑杆时两层都要重绘，表现为“一拖就闪断 / 卡死”。改为窗内 Border 覆盖层，控件名保持不变。
 param(
@@ -62,5 +63,10 @@ Assert ($n.Contains('x:Name="InlineEraserPanel"')) '内嵌橡皮条未写入'
 Assert ($n.Contains('x:Name="SliderMBEraser"')) '滑块名丢失'
 Assert ($n.Contains('x:Name="TextBlockMBEraserInfo"')) '提示文字名丢失'
 Write-Host 'OK  PHASE S 校验通过'
+
+Write-Host "== PHASE T: 橡皮自动回笔 =="
+$fix7 = Join-Path $PSScriptRoot 'apply-stb-fix7.ps1'
+Assert (Test-Path -LiteralPath $fix7) 'missing stb-plus/apply-stb-fix7.ps1'
+& $fix7 -Root $Root -Version $Version
 
 Write-Host "STB FIX6 PATCHES DONE"
