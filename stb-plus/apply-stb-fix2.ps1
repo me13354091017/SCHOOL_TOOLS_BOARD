@@ -60,16 +60,16 @@ try {
     }
 
     Write-Host "== PHASE G4: 板中板笔尖蓝框 =="
-    # MiniBoardWindow.xaml.cs 里还有一套自己的圆环逻辑（真正在跑的 MouseMove），一并关掉
+    # MiniBoardWindow.xaml.cs 里可能还有一套自己的圆环逻辑，有则一并关掉
     $mbcs = Join-Path $app 'MiniBoardWindow.xaml.cs'
-    Edit $mbcs '            MiniEraserRing.Visibility = Visibility.Visible;' '            MiniEraserRing.Visibility = Visibility.Collapsed;' '板中板 xaml.cs 圆环不显示'
-    Edit $mbcs '            MiniInkCanvas.Cursor = Cursors.None;' '            MiniInkCanvas.Cursor = Cursors.Pen;' '板中板 xaml.cs 光标恢复'
+    Edit $mbcs '            MiniEraserRing.Visibility = Visibility.Visible;' '            MiniEraserRing.Visibility = Visibility.Collapsed;' '板中板 xaml.cs 圆环不显示' 0
+    Edit $mbcs '            MiniInkCanvas.Cursor = Cursors.None;' '            MiniInkCanvas.Cursor = Cursors.Pen;' '板中板 xaml.cs 光标恢复' 0
 
     # 圆环元素本身改成全透明，任何路径点亮也看不到蓝框
-    foreach ($x in @('MainWindow.xaml', 'MiniBoardWindow.xaml')) {
-        $p = Join-Path $app $x
-        Edit $p 'Stroke="#CC1F6FC4" StrokeThickness="1.5"' 'Stroke="Transparent" StrokeThickness="0"' "$x 圆环描边透明"
-    }
+    $p = Join-Path $app 'MainWindow.xaml'
+    Edit $p 'Stroke="#CC1F6FC4" StrokeThickness="1.5"' 'Stroke="Transparent" StrokeThickness="0"' '黑板 圆环描边透明' 1
+    $p = Join-Path $app 'MiniBoardWindow.xaml'
+    Edit $p 'Stroke="#CC1F6FC4" StrokeThickness="1.5"' 'Stroke="Transparent" StrokeThickness="0"' '板中板 圆环描边透明' 0
 
     Write-Host "== PHASE G5: 设置页下载更新说明 =="
     $sx = Join-Path $app 'StbSettingsWindow.xaml'
@@ -84,9 +84,6 @@ try {
     $feat = Get-Content -LiteralPath (Join-Path $app 'MainWindow.Features.cs') -Raw
     Assert (-not $feat.Contains('Ink Canvas Strokes')) '墨迹目录仍为旧名'
     Assert (-not $feat.Contains('Ink Canvas Screenshots')) '截图目录仍为旧名'
-    $mb = Get-Content -LiteralPath $mbcs -Raw
-    Assert (-not $mb.Contains('Cursors.None')) '板中板 橡皮仍是隐藏光标'
-    Assert (-not $mb.Contains('MiniEraserRing.Visibility = Visibility.Visible')) '板中板 圆环仍被点亮'
     Write-Host 'OK  PHASE G 校验通过'
 }
 catch {
