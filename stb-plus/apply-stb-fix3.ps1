@@ -4,6 +4,7 @@
 # 1.0.1.9：删除浮动栏上的「橡皮大小」按钮，并接入新的组件库（组件管理窗）。
 # 1.0.1.10：在尾部串接 fix4（快捷设置面板重排）。
 # 1.0.1.11：在尾部再串 fix5（拖拽缩放与橡皮大小卡顿修复）。
+# 1.0.1.12：在尾部再串 fix6（板中板橡皮条改窗内嵌）。
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -49,8 +50,6 @@ try {
         '        ValueChanged="SliderPptPenWidth_ValueChanged" Loaded="SliderPptPenWidth_Loaded" />'
     ) -join $lf
     Edit $mw $hint ($hint + $lf + '                    ' + $penSlider) '更多颜色弹层加粗细滑杆'
-
-    # 1.0.1.9：不再向浮动栏插「橡皮大小」图标（橡皮大小仍可在设置页 / 板中板内调节）
 
     $popup = @(
         '<Popup x:Name="PopupPptEraser" PlacementTarget="{Binding ElementName=BorderPenPalette}" Placement="Bottom"',
@@ -105,6 +104,11 @@ try {
     $fix5 = Join-Path $PSScriptRoot 'apply-stb-fix5.ps1'
     Assert (Test-Path -LiteralPath $fix5) 'missing stb-plus/apply-stb-fix5.ps1'
     & $fix5 -Root $Root -Version $Version
+
+    Write-Host "== PHASE S: 板中板橡皮条改为窗内嵌 =="
+    $fix6 = Join-Path $PSScriptRoot 'apply-stb-fix6.ps1'
+    Assert (Test-Path -LiteralPath $fix6) 'missing stb-plus/apply-stb-fix6.ps1'
+    & $fix6 -Root $Root -Version $Version
 }
 catch {
     Write-Host ("::error::STB fix3 failed: " + $_.Exception.Message)
