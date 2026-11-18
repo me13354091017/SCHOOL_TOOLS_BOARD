@@ -9,12 +9,13 @@ namespace InkCanvasPlus
 {
     /// <summary>
     /// 主窗口（黑板 / 白板 / PPT / 批注）的橡皮自动回笔：
-    /// 擦掉笔迹后自动切回书写模式，和希沃“擦完接着写”的手感一致。
-    /// 只在橡皮模式下生效；普通书写、选择等模式不受影响。
+    /// 一次擦除手势结束后才切回书写，而不是“橡皮刚碰到墨迹就变成笔”——
+    /// 后者会导致橡皮按下去第一下就把笔迹删掉，后续拖动直接画出新笔迹。
     /// </summary>
     public partial class MainWindow
     {
         private bool _stbAutoPenHooked = false;
+        private bool _stbErasedInGesture = false;
 
         internal void StbInitAutoPen()
         {
@@ -23,7 +24,10 @@ namespace InkCanvasPlus
                 return;
             }
             _stbAutoPenHooked = true;
+
             inkCanvas.Strokes.StrokesChanged += StbInkCanvas_StrokesChanged;
+            inkCanvas.AddHandler(UIElement.PreviewStylusUpEvent, new StylusEventHandler(StbAutoPen_StylusUp), true);
+            inkCanvas.AddHandler(UIElement.PreviewMouseUpEvent, new MouseButtonEventHandler(StbAutoPen_MouseUp), true);
         }
 
         private void StbInkCanvas_StrokesChanged(object sender, StrokeCollectionChangedEventArgs e)
@@ -32,6 +36,32 @@ namespace InkCanvasPlus
             {
                 return;
             }
+            if (!StbInEraserMode())
+            {
+                return;
+            }
+            // 只记“这一笔擦到东西了”，等抬手后再切回书写
+            _stbErasedInGesture = true;
+        }
+
+        private void StbAutoPen_StylusUp(object sender, StylusEventArgs e)
+        {
+            StbFinishEraseGesture();
+        }
+
+        private void StbAutoPen_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            StbFinishEraseGesture();
+        }
+
+        private void StbFinishEraseGesture()
+        {
+            if (!_stbErasedInGesture)
+            {
+                return;
+            }
+            _stbErasedInGesture = false;
+
             if (!StbInEraserMode())
             {
                 return;
