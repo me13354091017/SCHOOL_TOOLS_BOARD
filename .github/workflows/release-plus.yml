@@ -1,7 +1,6 @@
 name: Release Plus
 
 # STB Plus 发布线：桌面底座从 ICC-CE 换成 Ink Canvas Plus（clover-tree/Ink-Canvas-Plus @ master）。
-# 版本全面重置为 1.0.0.0，作为 ICC-CE 版之后的正式主应用。
 
 on:
   push:
@@ -87,6 +86,12 @@ jobs:
           $ver = (Get-Content VERSION_PLUS -Raw).Trim()
           ./stb-plus/apply-stb-fix3.ps1 -Root plus-src -Version "$ver"
 
+      - name: Apply STB welcome content
+        shell: pwsh
+        run: |
+          $ver = (Get-Content VERSION_PLUS -Raw).Trim()
+          ./stb-plus/apply-stb-welcome.ps1 -Root plus-src -Version "$ver"
+
       - name: Build icon
         shell: pwsh
         run: |
@@ -97,7 +102,6 @@ jobs:
           } else {
             Write-Host '::warning::magick missing, keep upstream icon'
           }
-          Write-Host ("ico=" + (Get-Item 'plus-src/Ink Canvas/Resources/InkCanvas.ico').Length)
 
       - name: Build solution
         working-directory: plus-src
@@ -114,7 +118,6 @@ jobs:
           $out = 'plus-src/Ink Canvas/bin/Release'
           if (-not (Test-Path $out)) { throw 'no build output dir' }
           Compress-Archive -Path "$out/*" -DestinationPath 'SchoolToolsBoard-Plus-win.zip' -Force
-          Write-Host ("zip=" + (Get-Item 'SchoolToolsBoard-Plus-win.zip').Length + " bytes")
 
       - name: Build installer
         shell: pwsh
@@ -124,10 +127,8 @@ jobs:
           if (-not (Test-Path $iscc)) { throw 'ISCC not found' }
           Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri 'https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/ChineseSimplified.isl' -OutFile 'C:\Program Files (x86)\Inno Setup 6\Languages\ChineseSimplified.isl'
           & $iscc 'plus-src\packaging\setup.iss' *>&1 | Tee-Object -FilePath iscc-plus.log
-          Write-Host "iscc exit=$LASTEXITCODE"
           $exe = Get-ChildItem 'plus-src/packaging/output' -Filter 'SchoolToolsBoard-Setup-*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $exe) { throw 'installer not produced' }
-          Write-Host ("setup=" + $exe.FullName + " " + $exe.Length + " bytes")
 
       - name: Generate update manifest
         shell: pwsh
@@ -144,7 +145,6 @@ jobs:
             '</item>'
           )
           [IO.File]::WriteAllText((Join-Path (Get-Location) 'version.xml'), ($lines -join "`n"), (New-Object System.Text.UTF8Encoding($false)))
-          Get-Content 'version.xml'
 
       - name: Package assets
         shell: pwsh
@@ -156,7 +156,6 @@ jobs:
           Copy-Item $exe.FullName "rel/SchoolToolsBoard-Setup-$ver.exe" -Force
           Copy-Item 'version.xml' 'rel/version.xml' -Force
           Copy-Item 'plus-src/LICENSE' 'rel/LICENSE.txt' -Force
-          Get-ChildItem 'rel' | ForEach-Object { Write-Host "$($_.Name) $($_.Length) bytes" }
 
       - name: Create or update GitHub Release
         shell: pwsh
@@ -173,11 +172,3 @@ jobs:
           } else {
             gh release create $tag rel/* --title $title --notes-file RELEASE_NOTES_PLUS.md --target "$env:GITHUB_SHA"
           }
-          Write-Host 'release published'
-
-      - name: Publish diagnostics
-        if: always()
-        shell: pwsh
-        run: |
-          Write-Host 'diag: build finished'
-          exit 0
