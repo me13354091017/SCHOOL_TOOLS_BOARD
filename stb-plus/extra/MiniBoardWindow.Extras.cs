@@ -10,13 +10,15 @@ namespace InkCanvasPlus
     /// 板中板的补充交互（partial 文件，不改动 MiniBoardWindow.xaml.cs 原代码）：
     ///   · 拖动条只移动窗口，不再误触发四边四角缩放（缩放改由 Preview 事件统一判定）
     ///   · 标题栏新增「最大化 / 还原」按钮
-    ///   · 橡皮模式下显示跟随笔尖的圆环（直径 = 橡皮直径）
+    ///   · 点画布空白处自动收起笔 / 橡皮弹层
     /// </summary>
     public partial class MiniBoardWindow
     {
         // ── 缩放判定（替代原来的 RootGrid_MouseLeftButtonDown 绑定）────────────
         private void StbRootGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            CloseMiniPopups();
+
             if (e.LeftButton != MouseButtonState.Pressed)
             {
                 return;
@@ -86,7 +88,7 @@ namespace InkCanvasPlus
             UpdateWidthLabel();
         }
 
-        // ── 橡皮跟随圆环 ───────────────────────────────────────────────────
+        // ── 橡皮跟随圆环（描边已在构建时置为透明，此处保留位置同步）────────────
         private void MiniInkCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             if (MiniEraserRing == null || MiniInkCanvas == null)
@@ -113,8 +115,8 @@ namespace InkCanvasPlus
             MiniEraserRing.Height = d;
             System.Windows.Controls.Canvas.SetLeft(MiniEraserRing, p.X - d / 2d);
             System.Windows.Controls.Canvas.SetTop(MiniEraserRing, p.Y - d / 2d);
-            MiniEraserRing.Visibility = Visibility.Visible;
-            MiniInkCanvas.Cursor = Cursors.None;
+            MiniEraserRing.Visibility = Visibility.Collapsed;
+            MiniInkCanvas.Cursor = Cursors.Pen;
         }
 
         private void MiniInkCanvas_MouseLeave(object sender, MouseEventArgs e)

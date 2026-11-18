@@ -4,35 +4,31 @@ using System.Windows.Controls;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Threading;
 
 namespace InkCanvasPlus
 {
     /// <summary>
     /// 板中板画笔 / 橡皮的交互扩展（partial 文件，不改动 MiniBoardWindow.xaml.cs 原有代码）：
     ///   · 单击「笔」→ 弹出调色板（12 色）+ 粗细滑杆（1–20 档，实际笔宽 = 档位 / 2）
-    ///   · 单击「橡皮」→ 切到点擦；双击（260ms 内第二次点击）→ 弹出橡皮大小滑杆（4–60）
+    ///   · 单击「橡皮」→ 切到点擦，同时直接弹出橡皮大小滑杆（4–60），点画布自动收起
     /// 颜色、橡皮尺寸都与主界面同一套观感。
     /// </summary>
     public partial class MiniBoardWindow
     {
         private int _eraserSize = 14;
-        private DispatcherTimer _eraserClickTimer;
         private bool _syncingPenUi = false;
 
-        private void EnsureEraserTimer()
+        /// <summary>关闭笔 / 橡皮两个弹层（点画布空白处时调用）。</summary>
+        private void CloseMiniPopups()
         {
-            if (_eraserClickTimer != null)
+            if (PopupPen != null)
             {
-                return;
+                PopupPen.IsOpen = false;
             }
-            _eraserClickTimer = new DispatcherTimer();
-            _eraserClickTimer.Interval = TimeSpan.FromMilliseconds(260);
-            _eraserClickTimer.Tick += (s, e) =>
+            if (PopupEraser != null)
             {
-                _eraserClickTimer.Stop();
-                SwitchToEraser();
-            };
+                PopupEraser.IsOpen = false;
+            }
         }
 
         /// <summary>单击「笔」：切回书写并弹出调色板；已经打开时再点一次收起。</summary>
@@ -54,28 +50,21 @@ namespace InkCanvasPlus
             }
         }
 
-        /// <summary>单击「橡皮」= 切橡皮；260ms 内再点一次 = 打开橡皮大小面板。</summary>
+        /// <summary>单击「橡皮」：切到点擦，并直接弹出橡皮大小滑杆；再点一次收起（大小已实时生效）。</summary>
         private void BtnMBEraserPanel_Click(object sender, RoutedEventArgs e)
         {
-            EnsureEraserTimer();
-            if (_eraserClickTimer.IsEnabled)
+            if (PopupPen != null)
             {
-                _eraserClickTimer.Stop();
-                if (PopupPen != null)
-                {
-                    PopupPen.IsOpen = false;
-                }
-                MiniInkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
-                ApplyEraserShape();
-                SyncEraserUi();
-                if (PopupEraser != null)
-                {
-                    PopupEraser.IsOpen = true;
-                }
+                PopupPen.IsOpen = false;
             }
-            else
+
+            MiniInkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
+            ApplyEraserShape();
+            SyncEraserUi();
+
+            if (PopupEraser != null)
             {
-                _eraserClickTimer.Start();
+                PopupEraser.IsOpen = !PopupEraser.IsOpen;
             }
         }
 
@@ -104,16 +93,6 @@ namespace InkCanvasPlus
             {
                 PopupPen.IsOpen = false;
             }
-        }
-
-        private void SwitchToEraser()
-        {
-            if (PopupEraser != null)
-            {
-                PopupEraser.IsOpen = false;
-            }
-            MiniInkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
-            ApplyEraserShape();
         }
 
         /// <summary>橡皮为点擦模式，直径写进 EraserShape（4–60 像素）。</summary>
