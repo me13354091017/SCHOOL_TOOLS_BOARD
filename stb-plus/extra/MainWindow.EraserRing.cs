@@ -61,8 +61,8 @@ namespace InkCanvasPlus
 
             StbEraserRing.Width = d;
             StbEraserRing.Height = d;
-            Canvas.SetLeft(StbEraserRing, p.X - d / 2d);
-            Canvas.SetTop(StbEraserRing, p.Y - d / 2d);
+            System.Windows.Controls.Canvas.SetLeft(StbEraserRing, p.X - d / 2d);
+            System.Windows.Controls.Canvas.SetTop(StbEraserRing, p.Y - d / 2d);
             StbEraserRing.Visibility = Visibility.Visible;
             inkCanvas.Cursor = Cursors.None;
         }

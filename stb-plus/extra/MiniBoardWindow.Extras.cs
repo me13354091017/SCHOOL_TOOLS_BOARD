@@ -111,8 +111,8 @@ namespace InkCanvasPlus
             Point p = e.GetPosition(MiniInkCanvas);
             MiniEraserRing.Width = d;
             MiniEraserRing.Height = d;
-            Canvas.SetLeft(MiniEraserRing, p.X - d / 2d);
-            Canvas.SetTop(MiniEraserRing, p.Y - d / 2d);
+            System.Windows.Controls.Canvas.SetLeft(MiniEraserRing, p.X - d / 2d);
+            System.Windows.Controls.Canvas.SetTop(MiniEraserRing, p.Y - d / 2d);
             MiniEraserRing.Visibility = Visibility.Visible;
             MiniInkCanvas.Cursor = Cursors.None;
         }
