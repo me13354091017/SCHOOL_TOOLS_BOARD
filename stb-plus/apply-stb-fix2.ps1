@@ -1,6 +1,6 @@
 # apply-stb-fix2.ps1
 # 1.0.1.6：调色盘选色仍为黑色的根因修复（GetBaseColor 把 -1 回落成黑）、保存目录改名、
-# 浮动栏「保存」旁加「保存到其它」、板中板笔尖蓝框（圆环仍被另一处代码点亮）彻底移除、设置页更新说明改写。
+# 浮动栏「保存」旁加「保存到其它」、板中板笔尖蓝框彻底移除、设置页更新说明改写。
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -34,7 +34,6 @@ try {
     Copy-Item -LiteralPath $saveAsSrc -Destination $app -Force
     Write-Host 'PATCHED  copy MainWindow.SaveAs.cs'
 
-    # 浮动栏「保存」图标右侧加一个「保存到其它」入口（OpenFile 图标 = 另存到指定目录）
     $mw = Join-Path $app 'MainWindow.xaml'
     Edit $mw '<ui:SymbolIcon Symbol="Save" Foreground="{DynamicResource FloatBarForeground}" MouseDown="Border_MouseDown" MouseUp="SymbolIconSaveStrokes_MouseUp" />' @'
 <ui:SymbolIcon Symbol="Save" Foreground="{DynamicResource FloatBarForeground}" MouseDown="Border_MouseDown" MouseUp="SymbolIconSaveStrokes_MouseUp" />
@@ -52,20 +51,18 @@ try {
                 default: return stbCustomInkColor ?? Colors.Black;
 '@ 'GetBaseColor 支持自定义色'
 
-    Write-Host "== PHASE G3: 墨迹与截图目录改名 =="
+    Write-Host "== PHASE G3: 墨迹与截图目录改名（用正斜杠，避免非逐字字符串里反斜杠转义报错） =="
     foreach ($f in @('MainWindow.Features.cs', 'MainWindow.PresentationAndSettings.cs')) {
         $p = Join-Path $app $f
-        Edit $p 'Ink Canvas Strokes' 'SchoolToolsBoard\Strokes' "$f 墨迹目录改名" 1
-        Edit $p 'Ink Canvas Screenshots' 'SchoolToolsBoard\Screenshots' "$f 截图目录改名" 0
+        Edit $p 'Ink Canvas Strokes' 'SchoolToolsBoard/Strokes' "$f 墨迹目录改名" 1
+        Edit $p 'Ink Canvas Screenshots' 'SchoolToolsBoard/Screenshots' "$f 截图目录改名" 0
     }
 
     Write-Host "== PHASE G4: 板中板笔尖蓝框 =="
-    # MiniBoardWindow.xaml.cs 里可能还有一套自己的圆环逻辑，有则一并关掉
     $mbcs = Join-Path $app 'MiniBoardWindow.xaml.cs'
     Edit $mbcs '            MiniEraserRing.Visibility = Visibility.Visible;' '            MiniEraserRing.Visibility = Visibility.Collapsed;' '板中板 xaml.cs 圆环不显示' 0
     Edit $mbcs '            MiniInkCanvas.Cursor = Cursors.None;' '            MiniInkCanvas.Cursor = Cursors.Pen;' '板中板 xaml.cs 光标恢复' 0
 
-    # 圆环元素本身改成全透明，任何路径点亮也看不到蓝框
     $p = Join-Path $app 'MainWindow.xaml'
     Edit $p 'Stroke="#CC1F6FC4" StrokeThickness="1.5"' 'Stroke="Transparent" StrokeThickness="0"' '黑板 圆环描边透明' 1
     $p = Join-Path $app 'MiniBoardWindow.xaml'
