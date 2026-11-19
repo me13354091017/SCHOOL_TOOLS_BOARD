@@ -49,12 +49,20 @@ $emojiAnchor = '<Border x:Name="BorderFloatingBarEmoji" FlowDirection="LeftToRig
 Assert ($t.Contains($emojiAnchor)) 'emoji anchor'
 $t = $t.Replace($emojiAnchor, '<Border x:Name="BorderFloatingBarEmoji" MouseRightButtonUp="StbSmileMenu_Open" FlowDirection="LeftToRight"')
 
-$settingAnchor = '<ui:SymbolIcon Symbol="Setting" Foreground="{DynamicResource FloatBarForeground}" MouseUp="SymbolIconSettings_Click" />'
-Assert ($t.Contains($settingAnchor)) 'settings anchor'
 $funcBtn = '<Border x:Name="StbBorderFunc" Width="24" Height="24" CornerRadius="4" Background="Transparent" ToolTip="插入函数" MouseDown="Border_MouseDown" MouseUp="SymbolIconFunc_MouseUp">' + "`r`n" +
 '                                <TextBlock Text="f(x)" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource FloatBarForeground}" HorizontalAlignment="Center" VerticalAlignment="Center" />' + "`r`n" +
 '                            </Border>'
-$t = $t.Replace($settingAnchor, $settingAnchor + "`r`n" + $funcBtn)
+
+# 浮动栏「设置」已被 floatbar 补丁改成 StackPanel（图标+文字），优先匹配它
+$settingPanelAnchor = '<StackPanel Background="Transparent" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" MouseUp="SymbolIconSettings_Click" ToolTip="设置">'
+$settingIconAnchor = '<ui:SymbolIcon Symbol="Setting" Foreground="{DynamicResource FloatBarForeground}" MouseUp="SymbolIconSettings_Click" />'
+if ($t.Contains($settingPanelAnchor)) {
+    $t = $t.Replace($settingPanelAnchor, $funcBtn + "`r`n                            " + $settingPanelAnchor)
+} elseif ($t.Contains($settingIconAnchor)) {
+    $t = $t.Replace($settingIconAnchor, $settingIconAnchor + "`r`n" + $funcBtn)
+} else {
+    throw 'ANCHOR FAIL: settings anchor'
+}
 
 $pptAnchor = 'ValueChanged="SliderPptPenWidth_ValueChanged" Loaded="SliderPptPenWidth_Loaded" />'
 Assert ($t.Contains($pptAnchor)) 'ppt anchor'
@@ -94,7 +102,7 @@ $c1 = '<Border Style="{StaticResource StbCard}">' + "`r`n" +
 '                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>' + "`r`n" +
 '                                    <StackPanel Grid.Column="0">' + "`r`n" +
 '                                        <TextBlock Text="浮动栏笑脸菜单" Style="{StaticResource StbCardTitle}" />' + "`r`n" +
-'                                        <TextBlock Text="右键浮动栏最左侧笑脸：组件编辑、设置、保存、另存到、打开、重启、退出" Style="{StaticResource StbCardDesc}" />' + "`r`n" +
+'                                        <TextBlock Text="右键浮动栏最左側笑脸：组件编辑、设置、保存、另存到、打开、重启、退出" Style="{StaticResource StbCardDesc}" />' + "`r`n" +
 '                                    </StackPanel>' + "`r`n" +
 '                                    <ui:ToggleSwitch x:Name="SwSmileMenu" Grid.Column="1" OnContent="开" OffContent="关" VerticalAlignment="Center" Toggled="SwSmileMenu_Toggled" />' + "`r`n" +
 '                                </Grid>' + "`r`n" +
