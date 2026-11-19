@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:InkCanvasPlus"
         Title="插入函数 · SchoolToolsBoard"
-        Width="1020" Height="660" MinWidth="900" MinHeight="560"
+        Width="1020" Height="640" MinWidth="900" MinHeight="560"
         Background="#FFF7F8FA" FontFamily="Microsoft YaHei UI"
         WindowStartupLocation="CenterScreen" SnapsToDevicePixels="True"
         Topmost="True" ShowInTaskbar="False" ResizeMode="CanResize"
@@ -64,13 +64,23 @@
             <Button x:Name="BtnCat4" Style="{StaticResource CatButton}" Content="指数函数" Tag="y=2^x" Click="BtnCat_Click" />
             <Button x:Name="BtnCat5" Style="{StaticResource CatButton}" Content="对数函数" Tag="y=log2(x)" Click="BtnCat_Click" />
             <Button x:Name="BtnCat6" Style="{StaticResource CatButton}" Content="三角函数" Tag="y=sin(x)" Click="BtnCat_Click" />
-            <TextBlock Text="支持写法：x、pi、e、+ - * / ^、sin cos tan、ln、lg、log2、sqrt、abs"
+            <TextBlock Text="支持写法：x、pi、e、+ - * /、x² x³、√( ) 括号里继续输入、sin cos tan、ln lg log2、abs、空心圆点 ○；滚轮缩放、按住拖动平移"
                        FontSize="10" Foreground="#FF8A909A" TextWrapping="Wrap" Margin="2,6,0,0" />
         </StackPanel>
 
-        <Border Grid.Column="1" Background="#FFFFFFFF" BorderBrush="#FFE3E6EC" BorderThickness="1" CornerRadius="10">
-            <local:StbFuncPlot x:Name="Plot" Margin="10" MinWidth="360" MinHeight="300" />
-        </Border>
+        <Grid Grid.Column="1">
+            <Border Background="#FFFFFFFF" BorderBrush="#FFE3E6EC" BorderThickness="1" CornerRadius="10">
+                <local:StbFuncPlot x:Name="Plot" Margin="10" MinWidth="360" MinHeight="300" />
+            </Border>
+            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,14,0">
+                <Button x:Name="BtnZoomIn" Content="＋" Width="32" Height="30" FontSize="16" Margin="0,0,0,6"
+                        ToolTip="放大（也可滚轮向上）" Click="StbZoomIn_Click" />
+                <Button x:Name="BtnZoomOut" Content="－" Width="32" Height="30" FontSize="16" Margin="0,0,0,6"
+                        ToolTip="缩小（也可滚轮向下）" Click="StbZoomOut_Click" />
+                <Button x:Name="BtnZoomReset" Content="⟲" Width="32" Height="30" FontSize="14"
+                        ToolTip="还原视图" Click="StbZoomReset_Click" />
+            </StackPanel>
+        </Grid>
 
         <Grid Grid.Column="2" Margin="14,0,0,0">
             <Grid.RowDefinitions>
@@ -98,10 +108,8 @@
                             Background="#FFFFFFFF" BorderBrush="#FFE3E6EC" BorderThickness="1" Cursor="Hand"
                             Click="BtnToggleKeypad_Click" />
                 </Grid>
-                <Border x:Name="PanelKeypad" Background="#FFF3F5F8" BorderBrush="#FFE3E6EC" BorderThickness="1"
-                        CornerRadius="8" Padding="8,8,2,2" Margin="0,0,0,8">
-                    <WrapPanel x:Name="KeypadHost" />
-                </Border>
+                <Border x:Name="PreviewHost" Background="#FFF8FAFC" BorderBrush="#FFE3E6EC" BorderThickness="1"
+                        CornerRadius="8" Padding="10,6,10,6" Margin="0,0,0,8" MinHeight="34" />
                 <TextBlock x:Name="TextHint" FontSize="11" Foreground="#FFD93025" TextWrapping="Wrap"
                            Margin="2,0,0,8" Visibility="Collapsed" />
                 <Button x:Name="BtnInsert" Content="插入函数" Height="38" Background="#FF1F8F5F" Foreground="White"
