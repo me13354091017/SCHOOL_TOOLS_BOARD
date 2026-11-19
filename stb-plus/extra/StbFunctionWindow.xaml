@@ -3,10 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:InkCanvasPlus"
         Title="插入函数 · SchoolToolsBoard"
-        Width="1000" Height="620" MinWidth="880" MinHeight="540"
+        Width="1020" Height="640" MinWidth="900" MinHeight="560"
         Background="#FFF7F8FA" FontFamily="Microsoft YaHei UI"
-        WindowStartupLocation="CenterOwner" SnapsToDevicePixels="True"
-        SizeChanged="Window_SizeChanged">
+        WindowStartupLocation="CenterScreen" SnapsToDevicePixels="True"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="CanResize"
+        SizeChanged="Window_SizeChanged" Loaded="Window_LoadedFunc">
     <Window.Resources>
         <Style x:Key="CatButton" TargetType="Button">
             <Setter Property="Background" Value="#FFFFFFFF" />
@@ -52,7 +53,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="280" />
+            <ColumnDefinition Width="292" />
         </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Column="0" Margin="0,0,14,0">
@@ -63,10 +64,12 @@
             <Button x:Name="BtnCat4" Style="{StaticResource CatButton}" Content="指数函数" Tag="y=2^x" Click="BtnCat_Click" />
             <Button x:Name="BtnCat5" Style="{StaticResource CatButton}" Content="对数函数" Tag="y=log2(x)" Click="BtnCat_Click" />
             <Button x:Name="BtnCat6" Style="{StaticResource CatButton}" Content="三角函数" Tag="y=sin(x)" Click="BtnCat_Click" />
+            <TextBlock Text="支持写法：x、pi、e、+ - * / ^、sin cos tan、ln、lg、log2、sqrt、abs"
+                       FontSize="10" Foreground="#FF8A909A" TextWrapping="Wrap" Margin="2,6,0,0" />
         </StackPanel>
 
         <Border Grid.Column="1" Background="#FFFFFFFF" BorderBrush="#FFE3E6EC" BorderThickness="1" CornerRadius="10">
-            <local:StbFuncPlot x:Name="Plot" Margin="10" />
+            <local:StbFuncPlot x:Name="Plot" Margin="10" MinWidth="360" MinHeight="300" />
         </Border>
 
         <Grid Grid.Column="2" Margin="14,0,0,0">
@@ -85,8 +88,10 @@
             <StackPanel Grid.Row="2" Margin="0,10,0,0">
                 <Button x:Name="BtnAddExpr" Style="{StaticResource FlatButton}" HorizontalAlignment="Left"
                         Content="+ 增加表达式" Click="BtnAddExpr_Click" Margin="0,0,0,10" />
-                <TextBlock x:Name="TextExprCount" FontSize="11" Foreground="#FF8A909A" Margin="2,0,0,8" />
-                <Button x:Name="BtnInsert" Content="插入函数" Height="36" Background="#FF1F8F5F" Foreground="White"
+                <TextBlock x:Name="TextExprCount" FontSize="11" Foreground="#FF8A909A" Margin="2,0,0,6" />
+                <TextBlock x:Name="TextHint" FontSize="11" Foreground="#FFD93025" TextWrapping="Wrap"
+                           Margin="2,0,0,8" Visibility="Collapsed" />
+                <Button x:Name="BtnInsert" Content="插入函数" Height="38" Background="#FF1F8F5F" Foreground="White"
                         BorderThickness="0" Cursor="Hand" Click="BtnInsert_Click" />
             </StackPanel>
         </Grid>
