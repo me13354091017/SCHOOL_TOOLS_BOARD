@@ -1,0 +1,94 @@
+<Window x:Class="InkCanvasPlus.StbFunctionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:InkCanvasPlus"
+        Title="插入函数 · SchoolToolsBoard"
+        Width="1000" Height="620" MinWidth="880" MinHeight="540"
+        Background="#FFF7F8FA" FontFamily="Microsoft YaHei UI"
+        WindowStartupLocation="CenterOwner" SnapsToDevicePixels="True"
+        SizeChanged="Window_SizeChanged">
+    <Window.Resources>
+        <Style x:Key="CatButton" TargetType="Button">
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="BorderBrush" Value="#FFE3E6EC" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="FlatButton" TargetType="Button">
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="BorderBrush" Value="#FFE3E6EC" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20,16,20,16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="150" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="280" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Column="0" Margin="0,0,14,0">
+            <TextBlock Text="函数类型" FontSize="13" FontWeight="SemiBold" Foreground="#FF1F2329" Margin="0,0,0,10" />
+            <Button x:Name="BtnCat1" Style="{StaticResource CatButton}" Content="一次函数" Tag="y=x" Click="BtnCat_Click" />
+            <Button x:Name="BtnCat2" Style="{StaticResource CatButton}" Content="二次函数" Tag="y=x^2" Click="BtnCat_Click" />
+            <Button x:Name="BtnCat3" Style="{StaticResource CatButton}" Content="幂函数" Tag="y=x^3" Click="BtnCat_Click" />
+            <Button x:Name="BtnCat4" Style="{StaticResource CatButton}" Content="指数函数" Tag="y=2^x" Click="BtnCat_Click" />
+            <Button x:Name="BtnCat5" Style="{StaticResource CatButton}" Content="对数函数" Tag="y=log2(x)" Click="BtnCat_Click" />
+            <Button x:Name="BtnCat6" Style="{StaticResource CatButton}" Content="三角函数" Tag="y=sin(x)" Click="BtnCat_Click" />
+        </StackPanel>
+
+        <Border Grid.Column="1" Background="#FFFFFFFF" BorderBrush="#FFE3E6EC" BorderThickness="1" CornerRadius="10">
+            <local:StbFuncPlot x:Name="Plot" Margin="10" />
+        </Border>
+
+        <Grid Grid.Column="2" Margin="14,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="表达式" FontSize="13" FontWeight="SemiBold" Foreground="#FF1F2329" Margin="0,0,0,8" />
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="PanelExpr" />
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                <Button x:Name="BtnAddExpr" Style="{StaticResource FlatButton}" HorizontalAlignment="Left"
+                        Content="+ 增加表达式" Click="BtnAddExpr_Click" Margin="0,0,0,10" />
+                <TextBlock x:Name="TextExprCount" FontSize="11" Foreground="#FF8A909A" Margin="2,0,0,8" />
+                <Button x:Name="BtnInsert" Content="插入函数" Height="36" Background="#FF1F8F5F" Foreground="White"
+                        BorderThickness="0" Cursor="Hand" Click="BtnInsert_Click" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
