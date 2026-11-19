@@ -3,6 +3,7 @@
 #   ① 浮动栏 / 左侧竖栏的「组件」入口改为直接打开「组件 · 浮动栏」编辑窗（旧的主界面组件窗不再出现）
 #   ② 两个入口的文字由“组件”改为“浮动栏”
 #   ③ 工具库新增「保存到其它」（复用另存对话框，StbSaveAsNow）
+# 1.0.1.18：尾部串接 fix12（快捷设置面板加宽 + 图标注）
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -75,3 +76,8 @@ Assert ($m.Contains('Text="浮动栏" FontSize="8"')) 'floatbar label missing'
 Write-Host 'OK  PHASE X verified'
 
 Write-Host "STB FIX11 PATCHES DONE"
+
+Write-Host "== PHASE Y: 快捷设置面板修正 =="
+$fix12 = Join-Path $PSScriptRoot 'apply-stb-fix12.ps1'
+Assert (Test-Path -LiteralPath $fix12) 'missing stb-plus/apply-stb-fix12.ps1'
+& $fix12 -Root $Root -Version $Version
