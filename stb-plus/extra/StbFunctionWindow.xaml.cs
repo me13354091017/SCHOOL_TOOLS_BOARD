@@ -7,7 +7,7 @@ using System.Windows.Media.Imaging;
 
 namespace InkCanvasPlus
 {
-    /// <summary>「插入函数」窗口：选类型 → 填表达式 → 画坐标图 → 插入到白板。</summary>
+    /// <summary>「插入函数」窗口：选类型 → 填表达式 → 画坐标图 → 插入到白板。支持希沃式快捷输入键盘。</summary>
     public partial class StbFunctionWindow : Window
     {
         private const int MaxExpr = 6;
@@ -33,6 +33,7 @@ namespace InkCanvasPlus
 
         private readonly List<Row> _rows = new List<Row>();
         private MainWindow _owner;
+        private TextBox _activeBox;
 
         public static void ShowFor(MainWindow owner)
         {
@@ -66,6 +67,7 @@ namespace InkCanvasPlus
                 {
                 }
             }
+            BuildKeypad();
             AddRow("y=x");
             RefreshAll();
         }
@@ -159,6 +161,7 @@ namespace InkCanvasPlus
             Row row = new Row { Root = root, Box = box, Color = color, Expr = expr };
             _rows.Add(row);
 
+            box.GotFocus += (s, e) => { _activeBox = box; };
             box.TextChanged += (s, e) => { row.Expr = box.Text; RefreshAll(); };
             del.Click += (s, e) =>
             {
@@ -229,6 +232,124 @@ namespace InkCanvasPlus
             else
             {
                 TextHint.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        // ===== 快捷输入键盘（希沃式） =====
+
+        private void BuildKeypad()
+        {
+            string[][] keys = new string[][]
+            {
+                new string[] { "x", "x" },
+                new string[] { "x²", "^2" },
+                new string[] { "x³", "^3" },
+                new string[] { "^", "^" },
+                new string[] { "(", "(" },
+                new string[] { ")", ")" },
+                new string[] { "+", "+" },
+                new string[] { "−", "-" },
+                new string[] { "×", "*" },
+                new string[] { "÷", "/" },
+                new string[] { "sin", "sin(" },
+                new string[] { "cos", "cos(" },
+                new string[] { "tan", "tan(" },
+                new string[] { "log₂", "log2(" },
+                new string[] { "lg", "lg(" },
+                new string[] { "ln", "ln(" },
+                new string[] { "√", "sqrt(" },
+                new string[] { "|x|", "abs(" },
+                new string[] { "π", "pi" },
+                new string[] { "e", "e" },
+                new string[] { "⌫", "@BACK" },
+                new string[] { "清空", "@CLS" }
+            };
+
+            foreach (string[] k in keys)
+            {
+                string token = k[1];
+                Button b = new Button
+                {
+                    Content = k[0],
+                    Width = 62,
+                    Height = 30,
+                    Margin = new Thickness(0, 0, 6, 6),
+                    FontSize = 12,
+                    Background = Brushes.White,
+                    BorderBrush = new SolidColorBrush(Color.FromRgb(0xE3, 0xE6, 0xEC)),
+                    BorderThickness = new Thickness(1),
+                    Cursor = System.Windows.Input.Cursors.Hand
+                };
+                b.Click += (s, e) => StbInsertToken(token);
+                KeypadHost.Children.Add(b);
+            }
+        }
+
+        private void BtnToggleKeypad_Click(object sender, RoutedEventArgs e)
+        {
+            PanelKeypad.Visibility = PanelKeypad.Visibility == Visibility.Visible
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+        }
+
+        /// <summary>把符号/函数片段插到当前表达式光标处。</summary>
+        private void StbInsertToken(string token)
+        {
+            TextBox box = _activeBox;
+            if (box == null && _rows.Count > 0)
+            {
+                box = _rows[_rows.Count - 1].Box;
+            }
+            if (box == null)
+            {
+                return;
+            }
+
+            if (token == "@CLS")
+            {
+                box.Text = string.Empty;
+                box.Focus();
+                try
+                {
+                    box.CaretIndex = 0;
+                }
+                catch
+                {
+                }
+                return;
+            }
+
+            string current = box.Text == null ? string.Empty : box.Text;
+            int start = box.SelectionStart < 0 ? current.Length : box.SelectionStart;
+            int sel = box.SelectionLength < 0 ? 0 : box.SelectionLength;
+            int caret = start;
+
+            if (token == "@BACK")
+            {
+                if (sel > 0)
+                {
+                    box.Text = current.Remove(start, sel);
+                    caret = start;
+                }
+                else if (start > 0)
+                {
+                    box.Text = current.Remove(start - 1, 1);
+                    caret = start - 1;
+                }
+            }
+            else
+            {
+                box.Text = current.Substring(0, start) + token + current.Substring(start + sel);
+                caret = start + token.Length;
+            }
+
+            box.Focus();
+            try
+            {
+                box.CaretIndex = caret;
+            }
+            catch
+            {
             }
         }
 
