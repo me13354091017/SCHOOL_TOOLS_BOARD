@@ -1,7 +1,6 @@
 # apply-stb-fix12.ps1
 # 1.0.1.18：快捷设置面板修正 + 「保存到其它」可辨识
-#   ① 面板加宽（250 -> 292），画笔粗细滑杆改为 186
-#   ② 「墨迹」一行改成“图标 + 文字”：保存 / 保存到其它 / 回放，不再只有图标
+# 1.0.1.19：尾部串接 fix13
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -84,3 +83,8 @@ Assert ($n.Contains('GridInkReplayButton_MouseUp')) 'replay handler lost'
 Write-Host 'OK  PHASE Y verified'
 
 Write-Host "STB FIX12 PATCHES DONE"
+
+Write-Host "== PHASE Z: floatbar preview + settings entry =="
+$fix13 = Join-Path $PSScriptRoot 'apply-stb-fix13.ps1'
+Assert (Test-Path -LiteralPath $fix13) 'missing stb-plus/apply-stb-fix13.ps1'
+& $fix13 -Root $Root -Version $Version
