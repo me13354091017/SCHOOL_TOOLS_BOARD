@@ -1,8 +1,8 @@
 # apply-stb-fix10.ps1
 # 1.0.1.16：修两处版式问题
-#   ① 设置页「橡皮用完自动回到书写」卡片原先插在 Panel0 之外，被拉伸成整页高、开关跑到底部；
-#      改为插回 Panel0 内部（「选择时隐藏墨迹」卡片之后），恢复正常卡片高度
+#   ① 设置页「橡皮用完自动回到书写」卡片原先插在 Panel0 之外，被拉伸成整页高；修回 Panel0 内部
 #   ② 浮动栏「快捷设置」面板改为顶端对齐，避免背景向下拉出一大块空白
+# 1.0.1.17：尾部串接 fix11（只保留编辑浮动栏 + 工具库保存到其它）
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -74,3 +74,8 @@ Assert ($nm.Contains('<Border Name="BorderTools" Width="250" VerticalAlignment="
 Write-Host 'OK  PHASE W verified'
 
 Write-Host "STB FIX10 PATCHES DONE"
+
+Write-Host "== PHASE X: 只保留编辑浮动栏 =="
+$fix11 = Join-Path $PSScriptRoot 'apply-stb-fix11.ps1'
+Assert (Test-Path -LiteralPath $fix11) 'missing stb-plus/apply-stb-fix11.ps1'
+& $fix11 -Root $Root -Version $Version
