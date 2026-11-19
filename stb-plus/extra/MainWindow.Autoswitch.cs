@@ -9,13 +9,13 @@ namespace InkCanvasPlus
 {
     /// <summary>
     /// 主窗口（黑板 / 白板 / PPT / 批注）的橡皮自动回笔：
-    /// 一次擦除手势结束后才切回书写，而不是“橡皮刚碰到墨迹就变成笔”——
-    /// 后者会导致橡皮按下去第一下就把笔迹删掉，后续拖动直接画出新笔迹。
+    /// 橡皮擦掉笔迹后**不立即**切回书写，先挂起，等抬笔（手指 / 笔 / 鼠标离开画布）再切回去，
+    /// 这样一次擦除手势可以连续擦多笔，不会被中途打断。开关在设置页「墨迹书写 → 橡皮用完自动回到书写」。
     /// </summary>
     public partial class MainWindow
     {
         private bool _stbAutoPenHooked = false;
-        private bool _stbErasedInGesture = false;
+        private bool _stbErasePending = false;
 
         internal void StbInitAutoPen()
         {
@@ -24,12 +24,14 @@ namespace InkCanvasPlus
                 return;
             }
             _stbAutoPenHooked = true;
-
             inkCanvas.Strokes.StrokesChanged += StbInkCanvas_StrokesChanged;
-            inkCanvas.AddHandler(UIElement.PreviewStylusUpEvent, new StylusEventHandler(StbAutoPen_StylusUp), true);
-            inkCanvas.AddHandler(UIElement.PreviewMouseUpEvent, new MouseButtonEventHandler(StbAutoPen_MouseUp), true);
+            inkCanvas.PreviewStylusUp += (s, e) => StbFlushEraserReturn();
+            inkCanvas.PreviewMouseLeftButtonUp += (s, e) => StbFlushEraserReturn();
+            inkCanvas.PreviewTouchUp += (s, e) => StbFlushEraserReturn();
+            inkCanvas.LostMouseCapture += (s, e) => StbFlushEraserReturn();
         }
 
+        /// <summary>擦掉了笔迹：只登记，不立即回笔。</summary>
         private void StbInkCanvas_StrokesChanged(object sender, StrokeCollectionChangedEventArgs e)
         {
             if (e.Removed.Count == 0)
@@ -40,29 +42,23 @@ namespace InkCanvasPlus
             {
                 return;
             }
-            // 只记“这一笔擦到东西了”，等抬手后再切回书写
-            _stbErasedInGesture = true;
-        }
-
-        private void StbAutoPen_StylusUp(object sender, StylusEventArgs e)
-        {
-            StbFinishEraseGesture();
-        }
-
-        private void StbAutoPen_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            StbFinishEraseGesture();
-        }
-
-        private void StbFinishEraseGesture()
-        {
-            if (!_stbErasedInGesture)
+            if (!StbPrefs.AutoPenBack)
             {
                 return;
             }
-            _stbErasedInGesture = false;
+            _stbErasePending = true;
+        }
 
-            if (!StbInEraserMode())
+        /// <summary>抬笔：如果这次手势里擦过东西，才切回书写。</summary>
+        private void StbFlushEraserReturn()
+        {
+            if (!_stbErasePending)
+            {
+                return;
+            }
+            _stbErasePending = false;
+
+            if (!StbPrefs.AutoPenBack || !StbInEraserMode())
             {
                 return;
             }

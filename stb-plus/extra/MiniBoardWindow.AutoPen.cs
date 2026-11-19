@@ -8,13 +8,13 @@ using System.Windows.Threading;
 namespace InkCanvasPlus
 {
     /// <summary>
-    /// 板中板的橡皮自动回笔：一次擦除手势结束后才切回书写、收起橡皮大小条。
-    /// 不在“橡皮刚碰到墨迹”时切换，避免后续拖动变成画线。
+    /// 板中板的橡皮自动回笔：擦掉笔迹后先挂起，抬笔（离开画布）再切回书写并收起橡皮大小条。
+    /// 开关与主窗口同一份：设置页「橡皮用完自动回到书写」。
     /// </summary>
     public partial class MiniBoardWindow
     {
         private bool _stbMiniAutoPenHooked = false;
-        private bool _stbMiniErasedInGesture = false;
+        private bool _stbMiniErasePending = false;
 
         internal void StbInitMiniAutoPen()
         {
@@ -23,16 +23,11 @@ namespace InkCanvasPlus
                 return;
             }
             _stbMiniAutoPenHooked = true;
-
             MiniInkCanvas.Strokes.StrokesChanged += StbMiniCanvas_StrokesChanged;
-            MiniInkCanvas.AddHandler(UIElement.PreviewStylusUpEvent, new StylusEventHandler(StbMiniAutoPen_StylusUp), true);
-            MiniInkCanvas.AddHandler(UIElement.PreviewMouseUpEvent, new MouseButtonEventHandler(StbMiniAutoPen_MouseUp), true);
-        }
-
-        private bool StbMiniInEraserMode()
-        {
-            InkCanvasEditingMode m = MiniInkCanvas.EditingMode;
-            return m == InkCanvasEditingMode.EraseByPoint || m == InkCanvasEditingMode.EraseByStroke;
+            MiniInkCanvas.PreviewStylusUp += (s, e) => StbMiniFlushEraserReturn();
+            MiniInkCanvas.PreviewMouseLeftButtonUp += (s, e) => StbMiniFlushEraserReturn();
+            MiniInkCanvas.PreviewTouchUp += (s, e) => StbMiniFlushEraserReturn();
+            MiniInkCanvas.LostMouseCapture += (s, e) => StbMiniFlushEraserReturn();
         }
 
         private void StbMiniCanvas_StrokesChanged(object sender, StrokeCollectionChangedEventArgs e)
@@ -41,32 +36,34 @@ namespace InkCanvasPlus
             {
                 return;
             }
-            if (!StbMiniInEraserMode())
+
+            InkCanvasEditingMode m = MiniInkCanvas.EditingMode;
+            if (m != InkCanvasEditingMode.EraseByPoint && m != InkCanvasEditingMode.EraseByStroke)
             {
                 return;
             }
-            _stbMiniErasedInGesture = true;
-        }
-
-        private void StbMiniAutoPen_StylusUp(object sender, StylusEventArgs e)
-        {
-            StbMiniFinishEraseGesture();
-        }
-
-        private void StbMiniAutoPen_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            StbMiniFinishEraseGesture();
-        }
-
-        private void StbMiniFinishEraseGesture()
-        {
-            if (!_stbMiniErasedInGesture)
+            if (!StbPrefs.AutoPenBack)
             {
                 return;
             }
-            _stbMiniErasedInGesture = false;
+            _stbMiniErasePending = true;
+        }
 
-            if (!StbMiniInEraserMode())
+        private void StbMiniFlushEraserReturn()
+        {
+            if (!_stbMiniErasePending)
+            {
+                return;
+            }
+            _stbMiniErasePending = false;
+
+            if (!StbPrefs.AutoPenBack)
+            {
+                return;
+            }
+
+            InkCanvasEditingMode m = MiniInkCanvas.EditingMode;
+            if (m != InkCanvasEditingMode.EraseByPoint && m != InkCanvasEditingMode.EraseByStroke)
             {
                 return;
             }
@@ -77,7 +74,8 @@ namespace InkCanvasPlus
         {
             try
             {
-                if (!StbMiniInEraserMode())
+                InkCanvasEditingMode m = MiniInkCanvas.EditingMode;
+                if (m != InkCanvasEditingMode.EraseByPoint && m != InkCanvasEditingMode.EraseByStroke)
                 {
                     return;
                 }
