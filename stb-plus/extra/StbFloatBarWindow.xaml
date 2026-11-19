@@ -83,12 +83,33 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Text="当前浮动栏" FontSize="14" FontWeight="SemiBold" Foreground="#FF1F2329" Margin="0,0,0,8" />
-            <Border Grid.Row="1" Background="#FFFFFFFF" BorderBrush="#FFE6E9EF" BorderThickness="1" CornerRadius="8">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <WrapPanel x:Name="PanelActive" Margin="12,10" />
-                </ScrollViewer>
-            </Border>
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                <TextBlock Text="当前浮动栏" FontSize="14" FontWeight="SemiBold" Foreground="#FF1F2329" VerticalAlignment="Center" />
+                <TextBlock x:Name="TextPreviewMode" FontSize="12" Foreground="#FF8A909A"
+                           VerticalAlignment="Center" Margin="10,0,0,0" />
+            </StackPanel>
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <!-- 浮动栏预览：未接管时显示默认浮动栏样式，接管后显示你自己的条目 -->
+                <Border Grid.Row="0" Background="#FFEFF3F8" BorderBrush="#FFE6E9EF" BorderThickness="1"
+                        CornerRadius="10" Padding="18,16">
+                    <Border Background="#FFFFFFFF" BorderBrush="#FFE1E4EA" BorderThickness="1"
+                            CornerRadius="18" Padding="12,7" HorizontalAlignment="Center">
+                        <StackPanel x:Name="PanelPreview" Orientation="Horizontal" VerticalAlignment="Center" />
+                    </Border>
+                </Border>
+                <TextBlock Grid.Row="1" Text="条目" FontSize="13" FontWeight="SemiBold" Foreground="#FF1F2329"
+                           Margin="0,14,0,8" />
+                <Border Grid.Row="2" Background="#FFFFFFFF" BorderBrush="#FFE6E9EF" BorderThickness="1" CornerRadius="8">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <WrapPanel x:Name="PanelActive" Margin="12,10" />
+                    </ScrollViewer>
+                </Border>
+            </Grid>
         </Grid>
 
         <TextBlock Grid.Row="3" Text="工具库" FontSize="14" FontWeight="SemiBold" Foreground="#FF1F2329"
