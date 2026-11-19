@@ -2,6 +2,7 @@
 # 1.0.1.21：「打开」图标找回
 #   ① 快捷设置「墨迹」行新增「打开」（保存 / 保存到其它 / 打开 / 回放）
 #   ② 浮动栏工具库新增「打开」条目
+# 1.0.1.23：尾部串接 fix16
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -104,3 +105,8 @@ Assert ((Get-Content -LiteralPath $sm -Raw).Contains('private void StbSymbolIcon
 Write-Host 'OK  PHASE B verified'
 
 Write-Host "STB FIX15 PATCHES DONE"
+
+Write-Host "== PHASE C: 笑脸连点三次 =="
+$fix16 = Join-Path $PSScriptRoot 'apply-stb-fix16.ps1'
+Assert (Test-Path -LiteralPath $fix16) 'missing stb-plus/apply-stb-fix16.ps1'
+& $fix16 -Root $Root -Version $Version
