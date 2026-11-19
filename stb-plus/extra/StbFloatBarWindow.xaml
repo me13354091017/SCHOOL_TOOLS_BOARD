@@ -1,0 +1,104 @@
+<Window x:Class="InkCanvasPlus.StbFloatBarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+        Title="组件 · 浮动栏 SchoolToolsBoard"
+        Width="980" Height="700"
+        MinWidth="760" MinHeight="520"
+        Background="#FFF7F8FA"
+        FontFamily="Microsoft YaHei UI"
+        WindowStartupLocation="CenterOwner"
+        SnapsToDevicePixels="True">
+    <Window.Resources>
+        <Style x:Key="PlainButton" TargetType="Button">
+            <Setter Property="Background" Value="#FFFFFFFF" />
+            <Setter Property="BorderBrush" Value="#FFE1E4EA" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#FF3A3F47" />
+            <Setter Property="Padding" Value="12,5" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="26,20,26,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="浮动栏" FontSize="25" FontWeight="Bold" Foreground="#FF1F2329" />
+                <TextBlock Text="用和主界面一样的组件方式编辑浮动栏：从下方工具库添加，上方可排序、开关文字、调图标大小。"
+                           FontSize="13" Foreground="#FF6B7280" Margin="0,6,0,0" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                <ui:ToggleSwitch x:Name="SwEnabled" OnContent="接管" OffContent="关闭"
+                                 VerticalAlignment="Center" Toggled="SwEnabled_Toggled" />
+                <TextBlock Text="使用自定义浮动栏" FontSize="13" Foreground="#FF3A3F47"
+                           VerticalAlignment="Center" Margin="8,0,0,0" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Margin="26,14,26,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="图标大小" FontSize="13" Foreground="#FF6B7280" VerticalAlignment="Center" />
+            <Slider Grid.Column="1" x:Name="SliderSize" Width="180" Minimum="12" Maximum="30"
+                    TickFrequency="1" IsSnapToTickEnabled="True" Margin="10,0,0,0"
+                    VerticalAlignment="Center" ValueChanged="SliderSize_ValueChanged" />
+            <TextBlock Grid.Column="2" x:Name="TextSize" Width="44" FontSize="13" Foreground="#FF3A3F47"
+                       VerticalAlignment="Center" Margin="8,0,0,0" TextAlignment="Left" />
+            <CheckBox Grid.Column="3" x:Name="ChkText" Content="图标下方显示文字" FontSize="13"
+                      VerticalAlignment="Center" Margin="20,0,0,0" Click="ChkText_Click" />
+            <Button Grid.Column="4" Content="恢复默认（关闭接管）" Style="{StaticResource PlainButton}"
+                    Height="30" HorizontalAlignment="Right" Click="BtnReset_Click" />
+        </Grid>
+
+        <Grid Grid.Row="2" Margin="26,16,26,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="当前浮动栏" FontSize="14" FontWeight="SemiBold" Foreground="#FF1F2329" Margin="0,0,0,8" />
+            <Border Grid.Row="1" Background="#FFFFFFFF" BorderBrush="#FFE6E9EF" BorderThickness="1" CornerRadius="8">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <WrapPanel x:Name="PanelActive" Margin="12,10" />
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <TextBlock Grid.Row="3" Text="工具库" FontSize="14" FontWeight="SemiBold" Foreground="#FF1F2329"
+                   Margin="26,16,26,8" />
+
+        <Border Grid.Row="4" Margin="26,0,26,20" Background="#FFFFFFFF" BorderBrush="#FFE6E9EF"
+                BorderThickness="1" CornerRadius="8" MaxHeight="250">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <WrapPanel x:Name="PanelLibrary" Margin="14,12" />
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>
