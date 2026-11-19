@@ -5,6 +5,7 @@
 # 1.0.1.10：在尾部串接 fix4（快捷设置面板重排）。
 # 1.0.1.11：在尾部再串 fix5（拖拽缩放与橡皮大小卡顿修复）。
 # 1.0.1.12：在尾部再串 fix6（板中板橡皮条改窗内嵌）。
+# 1.0.1.17：入口断言兼容「组件窗」与「浮动栏编辑窗」两种指向。
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -78,7 +79,8 @@ try {
         Copy-Item -LiteralPath $src -Destination $app -Force
         Write-Host ("PATCHED  copy " + $name)
     }
-    Assert (Select-String -LiteralPath (Join-Path $app 'MainWindow.Components.cs') -Pattern 'StbComponentManagerWindow.ShowFor' -Quiet) '组件入口未指向组件管理窗'
+    $mcText = Get-Content -LiteralPath (Join-Path $app 'MainWindow.Components.cs') -Raw
+    Assert ($mcText.Contains('StbComponentManagerWindow.ShowFor') -or $mcText.Contains('StbFloatBarWindow.ShowFor')) '组件入口缺少入口绑定'
     Assert (Select-String -LiteralPath (Join-Path $app 'StbComponentRegistry.cs') -Pattern 'stb.week' -Quiet) '组件库缺少新组件'
     try {
         $xml = New-Object System.Xml.XmlDocument
