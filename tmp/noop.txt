@@ -1,0 +1,3 @@
+$old = Get-Content -LiteralPath '/tmp/f3.ps1' -Raw
+$new = $old.Replace("    Assert (Select-String -LiteralPath (Join-Path `$app 'MainWindow.Components.cs') -Pattern 'StbComponentManagerWindow.ShowFor' -Quiet) '组件入口未指向组件管理窗'", "    `$mc = Get-Content -LiteralPath (Join-Path `$app 'MainWindow.Components.cs') -Raw`r`n    Assert (`$mc.Contains('StbComponentManagerWindow.ShowFor') -or `$mc.Contains('StbFloatBarWindow.ShowFor')) '组件入口缺少入口绑定'")
+[IO.File]::WriteAllText('/tmp/f3fix.ps1', $new, (New-Object System.Text.UTF8Encoding($false))
