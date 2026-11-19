@@ -1,21 +1,28 @@
-# SchoolToolsBoard (STB) v1.0.1.14
+# SchoolToolsBoard (STB) v1.0.1.15
 
 > 底座：Ink Canvas Plus（clover-tree/Ink-Canvas-Plus，GPL-3.0）｜发行者：周之尧
 
-## 橡皮回笔：从“碰到就回”改成“抬笔才回”
-上一版的做法是：`Strokes.StrokesChanged` 里 `Removed.Count > 0` 就直接切回 `Ink`。问题是橡皮一碰到第一笔，画布当场变回书写，你按着不放往下擦，后面全是画线——所以提笔之前就被打断了。
+## 浮动栏接入同一套组件系统
+之前组件系统只管主界面上的信息组件（时钟 / 倒计时 / 课程表…）。这版把浮动栏也做成“组件”：从工具库往浮动栏里放条目，像编辑主界面组件一样增删排序。
 
-现在改为两段式：
-- **擦的过程中**：`StrokesChanged` 只置 `_stbErasePending = true`，`EditingMode` 保持 `EraseByPoint` / `EraseByStroke`，一次按住可以连续擦任意多笔。
-- **抬笔时**：`PreviewStylusUp`、`PreviewMouseLeftButtonUp`、`PreviewTouchUp`、`LostMouseCapture` 四个出口都挂同一个 flush；有挂起才真正切回 `Ink`，切完清标记。
+### 入口
+组件窗（浮动栏「组件」图标 / 左侧竖栏「组件」）→ 底部 **编辑浮动栏**。
+窗口顶部：`使用自定义浮动栏` 开关 + `图标大小` 滑杆（12–30）+ `图标下方显示文字`。
 
-挂起标记一次手势只置一次、flush 一次就清，不会重复触发；切换仍放在 `DispatcherPriority.Input`，不抢当前输入队列。板中板的 `MiniInkCanvas` 同一套逻辑，回笔时顺便把橡皮大小条收起。
+### 工作方式
+- 关闭接管：浮动栏完全保持原样，内置工具组不动。
+- 开启接管且至少一条：隐藏内置两组工具（`StackPanelCanvacMain`、`StackPanelCanvasControls`），用你自己排的条目组成浮动栏；每条都是 图标（默认 18px）+ 可选文字，点一下就执行对应动作。
 
-## 新增开关：橡皮用完自动回到书写
-位置：设置 → 「墨迹书写」分类，第三张卡下面。默认 **开**。
-- 关闭后擦完仍停在橡皮，适合要连续擦一大片再统一写的场景
-- 开关值写 `%AppData%\SchoolToolsBoard\prefs.txt` 的 `autoPenBack`，不动上游 Settings JSON，避免反序列化风险
-- 黑板 / 白板、PPT 批注、板中板读同一个键，改一处全生效
+### 工具库（10 项）
+板中板、组件、设置、画笔、荧光笔、橡皮、选择、清屏、全屏、退出。
+画笔/荧光笔/橡皮/选择直接改 `inkCanvas.EditingMode`（荧光笔同时给 12px 半透明黄色矩形笔头）；清屏清空当前画布笔迹；全屏在最大化与还原间切换。
+
+### 配置
+`%AppData%\SchoolToolsBoard\floatbar.txt`：`enabled` / `size` / `text` / `items`，即时生效，重启保留；「恢复默认」一键清空并关闭接管。
+
+## 保留
+- 橡皮抬笔后才回笔 + 设置页开关
+- 板中板橡皮条、拖拽角缩放、组件系统、整页设置页
 
 ## 开源
 - 上游：https://github.com/clover-tree/Ink-Canvas-Plus （GPL-3.0）
