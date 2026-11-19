@@ -98,3 +98,8 @@ Write-Host 'PATCHED settings cards'
 Assert ((ReadText $more).Contains('SwKeypad_Toggled')) 'handlers missing'
 Assert ((ReadText $sx).Contains('StbBtnResetPrefs_Click')) 'reset card missing'
 Write-Host 'OK fix18 verified'
+
+# 链到 fix19
+$fix19 = Join-Path $PSScriptRoot 'apply-stb-fix19.ps1'
+Assert (Test-Path -LiteralPath $fix19) 'missing fix19'
+& $fix19 -Root $Root -Version $Version
