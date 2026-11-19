@@ -29,6 +29,25 @@ foreach ($name in @('MainWindow.Components.cs', 'MainWindow.SaveAs.cs', 'StbBarR
     Write-Host ("PATCHED  copy " + $name)
 }
 
+Write-Host "== PHASE X1b: add save-as item to tool library =="
+$reg = Join-Path $app 'StbBarRegistry.cs'
+$rt = Get-Content -LiteralPath $reg -Raw
+$rAnchor = '                Add(list, "stb.bar.clear", "清屏", "✕", "清空当前画布的所有笔迹。");'
+Assert ($rt.Contains($rAnchor)) 'clear item anchor missing'
+Assert (-not $rt.Contains('stb.bar.saveas')) 'saveas item already exists'
+$rt = $rt.Replace($rAnchor, '                Add(list, "stb.bar.saveas", "保存到其它", "⤓", "把当前墨迹另存到指定位置。");' + "`r`n" + $rAnchor)
+[IO.File]::WriteAllText($reg, $rt, $utf8)
+
+$fbb = Join-Path $app 'StbFloatBar.cs'
+$ft = Get-Content -LiteralPath $fbb -Raw
+$fAnchor = '                    case "stb.bar.clear":'
+Assert ($ft.Contains($fAnchor)) 'clear action anchor missing'
+$ft = $ft.Replace($fAnchor, '                    case "stb.bar.saveas":' + "`r`n" +
+    '                        StbSaveAsNow();' + "`r`n" +
+    '                        return;' + "`r`n" + $fAnchor)
+[IO.File]::WriteAllText($fbb, $ft, $utf8)
+Write-Host 'PATCHED  tool library save-as'
+
 Write-Host "== PHASE X2: labels 组件 -> 浮动栏 =="
 $mw = Join-Path $app 'MainWindow.xaml'
 $t = Get-Content -LiteralPath $mw -Raw
