@@ -24,9 +24,12 @@ $mw = Join-Path $app 'MainWindow.xaml'
 $t = Get-Content -LiteralPath $mw -Raw
 
 Write-Host "== PHASE B1: quick settings open icon =="
-$replay = '<Grid Width="20" Height="20" HorizontalAlignment="Left"'
-$ri = $t.IndexOf($replay)
-Assert ($ri -ge 0) 'replay grid anchor missing'
+$anchor = @'
+                                                <StackPanel>
+                                                    <Grid Width="20" Height="20" HorizontalAlignment="Left"
+'@
+$anchor = $anchor.Trim("`r", "`n")
+Assert ($t.Contains($anchor)) 'replay block anchor missing'
 
 $openBlock = @'
 <StackPanel Margin="0,0,18,0">
@@ -39,9 +42,10 @@ $openBlock = @'
                                                                Foreground="{DynamicResource FloatBarForeground}" Opacity="0.85" />
                                                 </StackPanel>
                                                 <StackPanel>
-                                                    ' + $replay + "
-"
-$t = $t.Remove($ri - 56, 56 + $replay.Length).Insert($ri - 56, $openBlock)
+                                                    <Grid Width="20" Height="20" HorizontalAlignment="Left"
+'@
+$openBlock = $openBlock.Trim("`r", "`n")
+$t = $t.Replace($anchor, $openBlock)
 [IO.File]::WriteAllText($mw, $t, $utf8)
 Write-Host 'PATCHED  quick settings open icon'
 
