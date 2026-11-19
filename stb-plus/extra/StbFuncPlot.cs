@@ -25,6 +25,13 @@ namespace InkCanvasPlus
             InvalidateVisual();
         }
 
+        protected override Size MeasureOverride(Size availableSize)
+        {
+            double w = double.IsInfinity(availableSize.Width) || availableSize.Width <= 0d ? 600d : availableSize.Width;
+            double h = double.IsInfinity(availableSize.Height) || availableSize.Height <= 0d ? 520d : availableSize.Height;
+            return new Size(w, h);
+        }
+
         protected override void OnRender(DrawingContext dc)
         {
             double w = ActualWidth;
@@ -82,6 +89,10 @@ namespace InkCanvasPlus
 
             if (Curves == null || Curves.Count == 0)
             {
+                FormattedText tip = new FormattedText("在右侧填写表达式，例如 y=x^2、y=sin(x)，曲线会实时画出来",
+                    CultureInfo.InvariantCulture, FlowDirection.LeftToRight, tf, 12d,
+                    new SolidColorBrush(Color.FromRgb(0x9A, 0xA1, 0xAA)), dpi);
+                dc.DrawText(tip, new Point(cx - tip.Width / 2d, cy + 24d));
                 return;
             }
 
