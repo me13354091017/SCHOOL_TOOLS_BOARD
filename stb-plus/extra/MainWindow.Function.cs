@@ -24,7 +24,7 @@ namespace InkCanvasPlus
 
         private void SymbolIconFunc_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (lastBorderMouseDownObject != sender || inkCanvas.Visibility != Visibility.Visible)
+            if (!StbPrefs.FuncButton)
             {
                 return;
             }
@@ -55,7 +55,20 @@ namespace InkCanvasPlus
 
         internal void StbOpenFunction()
         {
-            StbFunctionWindow.ShowFor(this);
+            try
+            {
+                StbFunctionWindow.ShowFor(this);
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    ShowNotification("函数画板打开失败：" + ex.Message);
+                }
+                catch
+                {
+                }
+            }
         }
 
         private System.Windows.Controls.Canvas StbEnsureFuncLayer()
@@ -64,7 +77,18 @@ namespace InkCanvasPlus
             {
                 return _stbFuncLayer;
             }
-            System.Windows.Controls.Grid root = Content as System.Windows.Controls.Grid;
+            System.Windows.Controls.Grid root = null;
+            try
+            {
+                root = Main_Grid;
+            }
+            catch
+            {
+            }
+            if (root == null)
+            {
+                root = Content as System.Windows.Controls.Grid;
+            }
             if (root == null)
             {
                 return null;
