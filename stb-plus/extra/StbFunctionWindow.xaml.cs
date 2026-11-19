@@ -38,6 +38,10 @@ namespace InkCanvasPlus
         {
             if (_instance != null)
             {
+                if (_instance.WindowState == WindowState.Minimized)
+                {
+                    _instance.WindowState = WindowState.Normal;
+                }
                 _instance.Activate();
                 return;
             }
@@ -54,10 +58,21 @@ namespace InkCanvasPlus
             InitializeComponent();
             if (owner != null && owner.IsLoaded)
             {
-                Owner = owner;
+                try
+                {
+                    Owner = owner;
+                }
+                catch
+                {
+                }
             }
             AddRow("y=x");
             RefreshAll();
+        }
+
+        private void Window_LoadedFunc(object sender, RoutedEventArgs e)
+        {
+            Plot.Refresh();
         }
 
         private void BtnCat_Click(object sender, RoutedEventArgs e)
@@ -178,45 +193,103 @@ namespace InkCanvasPlus
         private void RefreshAll()
         {
             List<StbCurve> curves = new List<StbCurve>();
+            int bad = 0;
+
             foreach (Row r in _rows)
             {
-                Func<double, double> f = StbFuncEngine.Compile(r.Box.Text);
+                string text = r.Box.Text == null ? string.Empty : r.Box.Text;
+                Func<double, double> f = StbFuncEngine.Compile(text);
                 if (f == null)
                 {
+                    bool blank = text.Replace(" ", string.Empty).Replace("y=", string.Empty).Length == 0;
+                    if (!blank)
+                    {
+                        bad++;
+                    }
+                    r.Root.BorderBrush = new SolidColorBrush(blank
+                        ? Color.FromRgb(0xE3, 0xE6, 0xEC)
+                        : Color.FromRgb(0xD9, 0x30, 0x25));
                     continue;
                 }
-                curves.Add(new StbCurve { Expr = r.Box.Text, Color = r.Color, F = f });
+                r.Root.BorderBrush = new SolidColorBrush(Color.FromRgb(0xE3, 0xE6, 0xEC));
+                StbCurve c = new StbCurve { Expr = text, Color = r.Color, F = f };
+                curves.Add(c);
             }
 
             Plot.Curves = curves;
             Plot.Refresh();
-            TextExprCount.Text = _rows.Count + " / " + MaxExpr;
+            TextExprCount.Text = "已画 " + curves.Count + " 条 · 表达式 " + _rows.Count + "/" + MaxExpr;
             BtnAddExpr.IsEnabled = _rows.Count < MaxExpr;
+
+            if (bad > 0)
+            {
+                TextHint.Text = "有 " + bad + " 条表达式认不出，检查写法：y=x^2、y=sin(x)、y=log2(x)、y=sqrt(x)";
+                TextHint.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                TextHint.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void BtnInsert_Click(object sender, RoutedEventArgs e)
         {
             if (_owner == null)
             {
+                MessageBox.Show("主窗口未就绪，无法插入。", "SchoolToolsBoard", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            List<StbCurve> curves = new List<StbCurve>(Plot.Curves);
+            if (curves.Count == 0)
+            {
+                MessageBox.Show("还没有能画的表达式，先填一条，例如 y=x^2。", "SchoolToolsBoard",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             try
             {
-                double w = Math.Max(1d, Plot.ActualWidth);
-                double h = Math.Max(1d, Plot.ActualHeight);
-
-                RenderTargetBitmap bmp = new RenderTargetBitmap(
-                    (int)Math.Round(w * 2d), (int)Math.Round(h * 2d), 192d, 192d, PixelFormats.Pbgra32);
-                bmp.Render(Plot);
-
-                string caption = "函数图像";
-                foreach (StbCurve c in Plot.Curves)
+                double w = Plot.ActualWidth;
+                double h = Plot.ActualHeight;
+                if (w < 120d || h < 120d)
                 {
-                    caption = c.Expr;
-                    break;
+                    w = 900d;
+                    h = 560d;
                 }
 
+                BitmapSource bmp;
+                if (Plot.ActualWidth >= 120d && Plot.ActualHeight >= 120d)
+                {
+                    Plot.UpdateLayout();
+                    RenderTargetBitmap rb = new RenderTargetBitmap(
+                        (int)Math.Round(w * 2d), (int)Math.Round(h * 2d), 192d, 192d, PixelFormats.Pbgra32);
+                    rb.Render(Plot);
+                    bmp = rb;
+                }
+                else
+                {
+                    StbFuncPlot off = new StbFuncPlot();
+                    off.Curves = curves;
+                    off.Width = w;
+                    off.Height = h;
+                    off.Measure(new Size(w, h));
+                    off.Arrange(new Rect(0d, 0d, w, h));
+                    RenderTargetBitmap rb = new RenderTargetBitmap(
+                        (int)Math.Round(w * 2d), (int)Math.Round(h * 2d), 192d, 192d, PixelFormats.Pbgra32);
+                    rb.Render(off);
+                    bmp = rb;
+                }
+
+                string caption = curves[0].Expr;
                 _owner.StbInsertFunctionImage(bmp, caption);
+                try
+                {
+                    _owner.Activate();
+                }
+                catch
+                {
+                }
                 Close();
             }
             catch (Exception ex)
