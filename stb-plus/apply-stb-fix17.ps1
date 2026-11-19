@@ -1,119 +1,137 @@
 # apply-stb-fix17.ps1
-# 1.0.1.25：浮动栏「运行」图标（右键菜单）+ 更多设置项 + 快捷键盘开关
-param(
-    [string]$Root = "plus-src",
-    [string]$Version = "1.0.0.0"
-)
+# 1.0.1.25：浮动栏运行图标 + 函数画板快捷键盘浮层 + 表达式归一化
+param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
-trap {
-    Write-Host ("::error::fix17: " + $_.Exception.Message)
-    throw
-}
+trap { Write-Host ("::error::fix17: " + $_.Exception.Message); throw }
 
 $app = Join-Path $Root 'Ink Canvas'
+function Assert([bool]$c, [string]$m) { if (-not $c) { throw ("ANCHOR FAIL: " + $m) } }
+function ReadText([string]$p) { return (Get-Content -LiteralPath $p -Raw) }
+function WriteText([string]$p, [string]$t) { [IO.File]::WriteAllText($p, $t, (New-Object System.Text.UTF8Encoding($false))) }
 
-function Assert([bool]$cond, [string]$msg) {
-    if (-not $cond) { throw "ANCHOR FAIL: $msg" }
-}
+$extra = Join-Path $PSScriptRoot 'extra'
 
-function ReadText([string]$path) { return (Get-Content -LiteralPath $path -Raw) }
-function WriteText([string]$path, [string]$text) { [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false))) }
-
-Write-Host "== PHASE D1: prefs RunIcon / Keypad =="
+# ---------- D1 prefs ----------
 $prefs = Join-Path $app 'StbPrefs.cs'
 $pt = ReadText $prefs
-Assert ($pt.Contains('internal static bool FuncButton')) 'FuncButton anchor missing'
-Assert (-not $pt.Contains('internal static bool RunIcon')) 'already has RunIcon'
-$add = @'
-        /// <summary>浮动栏运行图标；默认开。</summary>
-        internal static bool RunIcon
-        {
-            get { return ReadFlag("runIcon", true); }
-            set { WriteFlag("runIcon", value); }
-        }
-
-        /// <summary>函数画板快捷输入键盘；默认开。</summary>
-        internal static bool Keypad
-        {
-            get { return ReadFlag("keypad", true); }
-            set { WriteFlag("keypad", value); }
-        }
-
-'@
-$anchor = '        /// <summary>浮动栏常驻「插入函数」按钮；默认开。</summary>'
-Assert ($pt.Contains($anchor)) 'FuncButton doc anchor missing'
-$pt = $pt.Replace($anchor, $add + $anchor)
+Assert ($pt.Contains('internal static bool FuncButton')) 'FuncButton missing'
+Assert (-not $pt.Contains('bool RunIcon')) 'RunIcon exists'
+$add = "        /// <summary>float-bar run icon.</summary>`r`n" +
+       "        internal static bool RunIcon`r`n" +
+       "        {`r`n" +
+       "            get { return ReadFlag(`"runIcon`", true); }`r`n" +
+       "            set { WriteFlag(`"runIcon`", value); }`r`n" +
+       "        }`r`n`r`n" +
+       "        /// <summary>function keypad.</summary>`r`n" +
+       "        internal static bool Keypad`r`n" +
+       "        {`r`n" +
+       "            get { return ReadFlag(`"keypad`", true); }`r`n" +
+       "            set { WriteFlag(`"keypad`", value); }`r`n" +
+       "        }`r`n`r`n"
+$anc = 'internal static bool FuncButton'
+$idx = $pt.IndexOf($anc)
+Assert ($idx -gt 0) 'FuncButton index'
+$lineStart = $pt.LastIndexOf("`n", $idx) + 1
+$blockStart = $lineStart
+$pt = $pt.Substring(0, $blockStart) + $add + $pt.Substring($blockStart)
 WriteText $prefs $pt
-Write-Host 'PATCHED  StbPrefs RunIcon / Keypad'
+Write-Host 'PATCHED prefs RunIcon/Keypad'
 
-Write-Host "== PHASE D2: run icon on float bar =="
+# ---------- D2 float bar run icon ----------
 $mw = Join-Path $app 'MainWindow.xaml'
 $t = ReadText $mw
-$settingPanelAnchor = '<StackPanel Background="Transparent" Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" MouseUp="SymbolIconSettings_Click" ToolTip="设置">'
-Assert ($t.Contains($settingPanelAnchor)) 'settings panel anchor missing'
-Assert (-not $t.Contains('StbBorderRun')) 'already has run icon'
-$run = '<Border x:Name="StbBorderRun" Width="24" Height="24" CornerRadius="4" Background="Transparent" ToolTip="运行函数画板（右键打开菜单）" MouseDown="Border_MouseDown" MouseUp="StbRunIcon_MouseUp" MouseRightButtonUp="StbSmileMenu_Open">' + "`r`n" +
-'                                <Viewbox Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center">' + "`r`n" +
-'                                    <ui:SymbolIcon Symbol="Play" Foreground="{DynamicResource FloatBarForeground}" />' + "`r`n" +
-'                                </Viewbox>' + "`r`n" +
-'                            </Border>'
-$t = $t.Replace($settingPanelAnchor, $run + "`r`n                            " + $settingPanelAnchor)
+$settingIdx = $t.IndexOf('ToolTip="设置">')
+Assert ($settingIdx -gt 0) 'settings tooltip missing'
+$i = $t.LastIndexOf('<StackPanel', $settingIdx)
+Assert ($i -gt 0) 'settings stackpanel missing'
+Assert (-not $t.Contains('StbBorderRun')) 'run icon exists'
+$run = '<Border x:Name="StbBorderRun" Width="24" Height="24" CornerRadius="4" Background="Transparent" ToolTip="运行函数画板" MouseDown="Border_MouseDown" MouseUp="StbRunIcon_MouseUp" MouseRightButtonUp="StbSmileMenu_Open">' + "`r`n" +
+       '                                <Viewbox Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center">' + "`r`n" +
+       '                                    <ui:SymbolIcon Symbol="Play" Foreground="{DynamicResource FloatBarForeground}" />' + "`r`n" +
+       '                                </Viewbox>' + "`r`n" +
+       '                            </Border>' + "`r`n" +
+       '                            '
+$t = $t.Substring(0, $i) + $run + $t.Substring($i)
 WriteText $mw $t
-Write-Host 'PATCHED  run icon'
+Write-Host 'PATCHED run icon'
 
-Write-Host "== PHASE D3: settings cards =="
-$sx = Join-Path $app 'StbSettingsWindow.xaml'
-$st = ReadText $sx
-$titleAnchor = '<TextBlock Text="高级" FontSize="22" FontWeight="SemiBold" Foreground="#22201C" Margin="0,4,0,12" />'
-Assert ($st.Contains($titleAnchor)) 'advanced title anchor missing'
-Assert (-not $st.Contains('SwRunIcon')) 'already has run icon card'
+# ---------- D3 run handler ----------
+$fn = Join-Path $app 'MainWindow.Function.cs'
+$ft = ReadText $fn
+Assert (-not $ft.Contains('StbRunIcon_MouseUp')) 'handler exists'
+$mIdx = $ft.IndexOf('internal void StbApplyFuncButtonVisibility()')
+Assert ($mIdx -gt 0) 'visibility method missing'
+$head = "        /// <summary>float bar run icon.</summary>`r`n" +
+        "        private void StbRunIcon_MouseUp(object sender, MouseButtonEventArgs e)`r`n" +
+        "        {`r`n" +
+        "            if (!StbPrefs.RunIcon) { return; }`r`n" +
+        "            try { BorderTools.Visibility = Visibility.Collapsed; GridNotifications.Visibility = Visibility.Collapsed; }`r`n" +
+        "            catch { }`r`n" +
+        "            StbOpenFunction();`r`n" +
+        "        }`r`n`r`n"
+$ft = $ft.Substring(0, $mIdx) + $head + $ft.Substring($mIdx)
+$tail = "            try`r`n" +
+        "            {`r`n" +
+        "                if (StbBorderRun != null)`r`n" +
+        "                {`r`n" +
+        "                    StbBorderRun.Visibility = StbPrefs.RunIcon ? Visibility.Visible : Visibility.Collapsed;`r`n" +
+        "                }`r`n" +
+        "            }`r`n" +
+        "            catch`r`n" +
+        "            {`r`n" +
+        "            }`r`n"
+$endIdx = $ft.IndexOf("`n        }`r`n", $mIdx + $head.Length)
+Assert ($endIdx -gt 0) 'body end missing'
+$ft = $ft.Substring(0, $endIdx + 1) + $tail + $ft.Substring($endIdx + 1)
+WriteText $fn $ft
+Write-Host 'PATCHED run handler'
 
-$cardRun = '<Border Style="{StaticResource StbCard}">' + "`r`n" +
-'                                <Grid>' + "`r`n" +
-'                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>' + "`r`n" +
-'                                    <StackPanel Grid.Column="0">' + "`r`n" +
-'                                        <TextBlock Text="浮动栏运行图标" Style="{StaticResource StbCardTitle}" />' + "`r`n" +
-'                                        <TextBlock Text="左键打开函数画板，右键弹出应用菜单（组件编辑 / 设置 / 保存 / 打开 / 重启 / 退出）" Style="{StaticResource StbCardDesc}" />' + "`r`n" +
-'                                    </StackPanel>' + "`r`n" +
-'                                    <ui:ToggleSwitch x:Name="SwRunIcon" Grid.Column="1" OnContent="开" OffContent="关" VerticalAlignment="Center" Toggled="SwRunIcon_Toggled" />' + "`r`n" +
-'                                </Grid>' + "`r`n" +
-'                            </Border>'
+# ---------- D4 window surgery ----------
+$wx = Join-Path $app 'StbFunctionWindow.xaml'
+$wxt = ReadText $wx
+$b = $wxt.IndexOf('<Border x:Name="PanelKeypad"')
+if ($b -gt 0) {
+    $e = $wxt.IndexOf('</Border>', $b)
+    $nl = $wxt.IndexOf("`r`n", $e)
+    if ($nl -lt 0) { $nl = $wxt.IndexOf("`n", $e) }
+    $wxt = $wxt.Substring(0, $b) + $wxt.Substring($nl + 1)
+    WriteText $wx $wxt
+    Write-Host 'PATCHED keypad xaml removed'
+}
 
-$cardKey = '<Border Style="{StaticResource StbCard}">' + "`r`n" +
-'                                <Grid>' + "`r`n" +
-'                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>' + "`r`n" +
-'                                    <StackPanel Grid.Column="0">' + "`r`n" +
-'                                        <TextBlock Text="函数快捷键盘" Style="{StaticResource StbCardTitle}" />' + "`r`n" +
-'                                        <TextBlock Text="数字、sin cos tan、e pi log2 ln、x2 x3 sqrt abs、括号、退格、清空" Style="{StaticResource StbCardDesc}" />' + "`r`n" +
-'                                    </StackPanel>' + "`r`n" +
-'                                    <ui:ToggleSwitch x:Name="SwKeypad" Grid.Column="1" OnContent="开" OffContent="关" VerticalAlignment="Center" Toggled="SwKeypad_Toggled" />' + "`r`n" +
-'                                </Grid>' + "`r`n" +
-'                            </Border>'
+$wc = Join-Path $app 'StbFunctionWindow.xaml.cs'
+$wct = ReadText $wc
+if ($wct.Contains('private void BuildKeypad()')) {
+    $s1 = $wct.LastIndexOf("`n", $wct.IndexOf('private void BuildKeypad()')) + 1
+    $s2raw = $wct.IndexOf('private void BtnInsert_Click(')
+    Assert ($s2raw -gt $s1) 'BtnInsert anchor missing'
+    $s2 = $wct.LastIndexOf("`n", $s2raw) + 1
+    $wct = $wct.Substring(0, $s1) + $wct.Substring($s2)
+    Write-Host 'PATCHED old keypad removed'
+}
+if ($wct.Contains('Popup _keypadPopup')) {
+    $wct = [regex]::Replace($wct, '(?m)^\s*private Popup _keypadPopup;\s*\r?\n', '')
+    Write-Host 'PATCHED dup field removed'
+}
+if (-not $wct.Contains('StbNorm(text)')) {
+    $wct = $wct.Replace('StbFuncEngine.Compile(text)', 'StbFuncEngine.Compile(StbNorm(text))')
+}
+WriteText $wc $wct
 
-$cardReset = '<Border Style="{StaticResource StbCard}">' + "`r`n" +
-'                                <Grid>' + "`r`n" +
-'                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>' + "`r`n" +
-'                                    <StackPanel Grid.Column="0">' + "`r`n" +
-'                                        <TextBlock Text="恢复默认设置" Style="{StaticResource StbCardTitle}" />' + "`r`n" +
-'                                        <TextBlock Text="笑脸菜单、插入函数、运行图标、快捷键盘、自动回笔全部恢复默认" Style="{StaticResource StbCardDesc}" />' + "`r`n" +
-'                                    </StackPanel>' + "`r`n" +
-'                                    <Button Grid.Column="1" Content="恢复默认" Padding="14,6" VerticalAlignment="Center" Click="StbBtnResetPrefs_Click" />' + "`r`n" +
-'                                </Grid>' + "`r`n" +
-'                            </Border>'
+$keypad = Join-Path $extra 'StbKeypad.cs'
+Assert (Test-Path -LiteralPath $keypad) 'missing extra/StbKeypad.cs'
+Copy-Item -LiteralPath $keypad -Destination (Join-Path $app 'StbKeypad.cs') -Force
+Write-Host 'COPY StbKeypad.cs'
 
-$st = $st.Replace($titleAnchor, $titleAnchor + "`r`n" + $cardRun + "`r`n" + $cardKey + "`r`n" + $cardReset)
-try { (New-Object System.Xml.XmlDocument).LoadXml($st) } catch { throw ("settings xaml malformed: " + $_.Exception.Message) }
-WriteText $sx $st
-Write-Host 'PATCHED  settings cards'
+# ---------- D5 verify ----------
+Assert ((ReadText $mw).Contains('StbBorderRun')) 'run icon xaml'
+Assert ((ReadText $fn).Contains('StbRunIcon_MouseUp')) 'run handler'
+Assert ((ReadText $prefs).Contains('bool RunIcon')) 'prefs'
+Assert ((ReadText (Join-Path $app 'StbKeypad.cs')).Contains('StbNorm')) 'keypad copy'
+Assert ((ReadText $wc).Contains('StbNorm(text)')) 'norm call'
+Write-Host 'OK fix17 verified'
 
-Write-Host "== PHASE D4: verify =="
-Assert ((ReadText $mw).Contains('x:Name="StbBorderRun"')) 'run icon missing'
-Assert ((ReadText $prefs).Contains('internal static bool RunIcon')) 'prefs missing'
-Assert ((ReadText $sx).Contains('SwRunIcon')) 'card missing'
-Assert ((ReadText (Join-Path $app 'StbSettingsWindow.More.cs')).Contains('SwKeypad_Toggled')) 'handlers missing'
-Assert ((ReadText (Join-Path $app 'MainWindow.Function.cs')).Contains('StbRunIcon_MouseUp')) 'run handler missing'
-Assert ((ReadText (Join-Path $app 'StbFuncEngine.cs')).Contains('Normalize')) 'engine normalize missing'
-Write-Host 'OK  PHASE D verified'
-
-Write-Host "STB FIX17 PATCHES DONE"
+$fix18 = Join-Path $PSScriptRoot 'apply-stb-fix18.ps1'
+Assert (Test-Path -LiteralPath $fix18) 'missing fix18'
+& $fix18 -Root $Root -Version $Version
