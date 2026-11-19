@@ -18,7 +18,12 @@ namespace InkCanvasPlus
             {
                 return;
             }
+            StbSaveAsNow();
+        }
 
+        /// <summary>弹出另存对话框，把当前墨迹写到用户指定位置（浮动栏组件也调它）。</summary>
+        internal void StbSaveAsNow()
+        {
             try
             {
                 BorderTools.Visibility = Visibility.Collapsed;
