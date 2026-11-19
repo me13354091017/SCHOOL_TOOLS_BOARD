@@ -1,7 +1,8 @@
 # apply-stb-fix8.ps1
-# 1.0.1.14：
+# 1.0.1.14：抬笔后才回笔 + 设置页开关
 #   ① 橡皮自动回笔改为「抬笔后才回」：擦的过程中保持橡皮，一次手势可连续擦多笔
 #   ② 设置页「墨迹书写」新增开关：橡皮用完自动回到书写（默认开，存 %AppData%\SchoolToolsBoard\prefs.txt）
+# 1.0.1.15：尾部串接 fix9（浮动栏接入组件系统）
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -20,7 +21,7 @@ function Assert([bool]$cond, [string]$msg) {
     if (-not $cond) { throw "ANCHOR FAIL: $msg" }
 }
 
-Write-Host "== PHASE U1: copy auto-pen and prefs sources =="
+Write-Host "== PHASE U1: copy auto-pen / prefs sources =="
 foreach ($name in @('MainWindow.Autoswitch.cs', 'MiniBoardWindow.AutoPen.cs', 'StbPrefs.cs', 'StbSettingsWindow.AutoPen.cs')) {
     $src = Join-Path $PSScriptRoot ('extra/' + $name)
     Assert (Test-Path -LiteralPath $src) ("missing source " + $name)
@@ -65,3 +66,8 @@ Assert (Test-Path -LiteralPath (Join-Path $app 'StbPrefs.cs')) 'prefs file missi
 Write-Host 'OK  PHASE U verified'
 
 Write-Host "STB FIX8 PATCHES DONE"
+
+Write-Host "== PHASE V: floatbar component system =="
+$fix9 = Join-Path $PSScriptRoot 'apply-stb-fix9.ps1'
+Assert (Test-Path -LiteralPath $fix9) 'missing stb-plus/apply-stb-fix9.ps1'
+& $fix9 -Root $Root -Version $Version
