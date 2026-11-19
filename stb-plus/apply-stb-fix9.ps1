@@ -3,6 +3,7 @@
 #   ① MainWindow 浮动栏里插入 StbCustomBar 容器
 #   ② 新增「组件 · 浮动栏」编辑窗（增删 / 排序 / 图标大小 / 文字开关 / 接管开关）
 #   ③ 组件窗底部加「编辑浮动栏」入口
+# 1.0.1.16：尾部串接 fix10（设置页卡片位置 + 快捷设置面板顶端对齐）
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -82,3 +83,8 @@ Assert (Test-Path -LiteralPath (Join-Path $app 'StbFloatBarWindow.xaml')) 'edito
 Write-Host 'OK  PHASE V verified'
 
 Write-Host "STB FIX9 PATCHES DONE"
+
+Write-Host "== PHASE W: 版式修复 =="
+$fix10 = Join-Path $PSScriptRoot 'apply-stb-fix10.ps1'
+Assert (Test-Path -LiteralPath $fix10) 'missing stb-plus/apply-stb-fix10.ps1'
+& $fix10 -Root $Root -Version $Version
