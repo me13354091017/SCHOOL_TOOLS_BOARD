@@ -2,21 +2,20 @@
 
 > 底座：Ink Canvas Plus（clover-tree/Ink-Canvas-Plus，GPL-3.0）｜发行者：周之尧
 
-## 修：橡皮一碰墨迹就变书写
+## 橡皮回笔：从“碰到就回”改成“抬笔才回”
+上一版的做法是：`Strokes.StrokesChanged` 里 `Removed.Count > 0` 就直接切回 `Ink`。问题是橡皮一碰到第一笔，画布当场变回书写，你按着不放往下擦，后面全是画线——所以提笔之前就被打断了。
 
-上一版把“自动回笔”直接挂在 `StrokesChanged` 上，只要有一次笔迹被删除就立刻切回 `Ink`。
-问题在于 `EraseByStroke`（整笔擦）是**按下即删**：手指落下的瞬间笔迹已被移除，于是模式立刻变回书写，后续拖动画出新笔迹——“橡皮碰到墨迹就变成书写”就是这么来的。
+现在改为两段式：
+- **擦的过程中**：`StrokesChanged` 只置 `_stbErasePending = true`，`EditingMode` 保持 `EraseByPoint` / `EraseByStroke`，一次按住可以连续擦任意多笔。
+- **抬笔时**：`PreviewStylusUp`、`PreviewMouseLeftButtonUp`、`PreviewTouchUp`、`LostMouseCapture` 四个出口都挂同一个 flush；有挂起才真正切回 `Ink`，切完清标记。
 
-现在改成两段式：
-1. `StrokesChanged` 只置一个 `_stbErasedInGesture` 标记（“这一笔擦到东西了”）；
-2. 在 `PreviewStylusUp` / `PreviewMouseUp`（用 `AddHandler(..., true)`，即使被内部占用也能收到）里才把标记转成真正的回笔。
+挂起标记一次手势只置一次、flush 一次就清，不会重复触发；切换仍放在 `DispatcherPriority.Input`，不抢当前输入队列。板中板的 `MiniInkCanvas` 同一套逻辑，回笔时顺便把橡皮大小条收起。
 
-这样擦除手势全程都是橡皮，抬手后才回笔，与希沃手感一致。主窗口与板中板各一套，逻辑一致。
-
-## 保留
-- 板中板橡皮条窗内嵌，点条内不再被“点画布收起”误杀
-- 拖拽角缩放 40ms 节流
-- 快捷设置面板新排版、另存为独立图标、透明底图标
+## 新增开关：橡皮用完自动回到书写
+位置：设置 → 「墨迹书写」分类，第三张卡下面。默认 **开**。
+- 关闭后擦完仍停在橡皮，适合要连续擦一大片再统一写的场景
+- 开关值写 `%AppData%\SchoolToolsBoard\prefs.txt` 的 `autoPenBack`，不动上游 Settings JSON，避免反序列化风险
+- 黑板 / 白板、PPT 批注、板中板读同一个键，改一处全生效
 
 ## 开源
 - 上游：https://github.com/clover-tree/Ink-Canvas-Plus （GPL-3.0）
