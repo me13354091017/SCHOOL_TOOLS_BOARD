@@ -31,22 +31,73 @@ Assert (-not $t.Contains('StbSmileMenu_Open')) 'attr not removed'
 WriteText $mw $t
 Write-Host 'PATCHED  smile rightclick removed'
 
-Write-Host "== PHASE C2: hook triple-click =="
+Write-Host "== PHASE C2: inject triple-click code =="
+$sm = Join-Path $app 'MainWindow.SmileMenu.cs'
+$smt = ReadText $sm
+$anchor = '        private Popup _stbSmilePopup;'
+Assert ($smt.Contains($anchor)) 'smile menu field anchor missing'
+Assert (-not $smt.Contains('StbSmileEmoji_MouseUp')) 'triple-click already injected'
+$code = @'
+
+        private DateTime _stbSmileLastClick = DateTime.MinValue;
+        private int _stbSmileClickCount;
+
+        internal void StbInitSmileMenu()
+        {
+            try
+            {
+                BorderFloatingBarEmoji.PreviewMouseLeftButtonUp -= StbSmileEmoji_MouseUp;
+                BorderFloatingBarEmoji.PreviewMouseLeftButtonUp += StbSmileEmoji_MouseUp;
+            }
+            catch
+            {
+            }
+        }
+
+        private void StbSmileEmoji_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!StbPrefs.SmileMenu)
+            {
+                return;
+            }
+            if (e.ChangedButton != MouseButton.Left)
+            {
+                return;
+            }
+
+            DateTime now = DateTime.UtcNow;
+            if ((now - _stbSmileLastClick).TotalMilliseconds > 800)
+            {
+                _stbSmileClickCount = 0;
+            }
+            _stbSmileLastClick = now;
+            _stbSmileClickCount++;
+
+            if (_stbSmileClickCount >= 3)
+            {
+                _stbSmileClickCount = 0;
+                StbSmileMenu_Open(sender, e);
+            }
+        }
+'@
+$smt = $smt.Replace($anchor, $anchor + $code)
+WriteText $sm $smt
+Write-Host 'PATCHED  triple-click injected'
+
+Write-Host "== PHASE C3: hook startup =="
 $ip = Join-Path $app 'MainWindow.InputAndPanels.cs'
 $it = ReadText $ip
-$anchor = '            StbApplyFuncButtonVisibility();'
-Assert ($it.Contains($anchor)) 'startup hook anchor missing'
+$hAnchor = '            StbApplyFuncButtonVisibility();'
+Assert ($it.Contains($hAnchor)) 'startup hook anchor missing'
 Assert (-not $it.Contains('StbInitSmileMenu();')) 'already hooked'
-$it = $it.Replace($anchor, $anchor + "`r`n" + '            StbInitSmileMenu();')
+$it = $it.Replace($hAnchor, $hAnchor + "`r`n" + '            StbInitSmileMenu();')
 WriteText $ip $it
 Write-Host 'PATCHED  StbInitSmileMenu hooked'
 
-Write-Host "== PHASE C3: verify =="
-$smt = ReadText (Join-Path $app 'MainWindow.SmileMenu.cs')
-Assert ($smt.Contains('internal void StbInitSmileMenu()')) 'smile hook missing'
-Assert ($smt.Contains('StbSmileEmoji_MouseUp')) 'triple-click handler missing'
-$ft = ReadText (Join-Path $app 'MainWindow.Function.cs')
-Assert ($ft.Contains('函数画板打开失败')) 'function error hint missing'
+Write-Host "== PHASE C4: verify =="
+Assert ((ReadText $sm).Contains('StbSmileEmoji_MouseUp')) 'triple-click missing'
+Assert ((ReadText $mw).Contains('x:Name="StbBorderFunc"')) 'f(x) button lost'
+Assert ((ReadText (Join-Path $app 'MainWindow.Function.cs')).Contains('函数画板打开失败')) 'function error hint missing'
 Assert ((ReadText (Join-Path $app 'StbFunctionWindow.xaml')).Contains('Topmost="True"')) 'function window not topmost'
 Write-Host 'OK  PHASE C verified'
 
