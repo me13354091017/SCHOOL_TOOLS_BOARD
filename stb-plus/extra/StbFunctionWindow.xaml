@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:InkCanvasPlus"
         Title="插入函数 · SchoolToolsBoard"
-        Width="1020" Height="640" MinWidth="900" MinHeight="560"
+        Width="1020" Height="660" MinWidth="900" MinHeight="560"
         Background="#FFF7F8FA" FontFamily="Microsoft YaHei UI"
         WindowStartupLocation="CenterScreen" SnapsToDevicePixels="True"
         Topmost="True" ShowInTaskbar="False" ResizeMode="CanResize"
@@ -53,7 +53,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="150" />
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="292" />
+            <ColumnDefinition Width="300" />
         </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Column="0" Margin="0,0,14,0">
@@ -88,7 +88,20 @@
             <StackPanel Grid.Row="2" Margin="0,10,0,0">
                 <Button x:Name="BtnAddExpr" Style="{StaticResource FlatButton}" HorizontalAlignment="Left"
                         Content="+ 增加表达式" Click="BtnAddExpr_Click" Margin="0,0,0,10" />
-                <TextBlock x:Name="TextExprCount" FontSize="11" Foreground="#FF8A909A" Margin="2,0,0,6" />
+                <Grid Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock x:Name="TextExprCount" Grid.Column="0" FontSize="11" Foreground="#FF8A909A" VerticalAlignment="Center" />
+                    <Button x:Name="BtnToggleKeypad" Grid.Column="1" Content="⌨ 快捷输入" FontSize="11" Padding="8,3"
+                            Background="#FFFFFFFF" BorderBrush="#FFE3E6EC" BorderThickness="1" Cursor="Hand"
+                            Click="BtnToggleKeypad_Click" />
+                </Grid>
+                <Border x:Name="PanelKeypad" Background="#FFF3F5F8" BorderBrush="#FFE3E6EC" BorderThickness="1"
+                        CornerRadius="8" Padding="8,8,2,2" Margin="0,0,0,8">
+                    <WrapPanel x:Name="KeypadHost" />
+                </Border>
                 <TextBlock x:Name="TextHint" FontSize="11" Foreground="#FFD93025" TextWrapping="Wrap"
                            Margin="2,0,0,8" Visibility="Collapsed" />
                 <Button x:Name="BtnInsert" Content="插入函数" Height="38" Background="#FF1F8F5F" Foreground="White"
