@@ -1,6 +1,7 @@
 # apply-stb-fix6.ps1
 # 1.0.1.12：板中板橡皮大小条改为窗口内嵌（去掉 Popup）
-# 1.0.1.13：尾部串接 fix7（橡皮自动回笔）
+# 1.0.1.13：尾部串接 fix7（橡皮自动回笔 + 点条误收修复）
+# 1.0.1.14：尾部再串 fix8（抬笔后才回笔 + 设置页开关）
 #   板中板是 AllowsTransparency 的分层窗口，橡皮大小条原先用 Popup（又是一个分层窗口），
 #   拖动滑杆时两层都要重绘，表现为“一拖就闪断 / 卡死”。改为窗内 Border 覆盖层，控件名保持不变。
 param(
@@ -23,12 +24,12 @@ function Assert([bool]$cond, [string]$msg) {
 
 Write-Host "== PHASE S1: 移除橡皮 Popup =="
 $mbx = Join-Path $app 'MiniBoardWindow.xaml'
-Assert (Test-Path -LiteralPath $mbx) 'MiniBoardWindow.xaml 缺失'
+Assert (Test-Path -LiteralPath $mbx) 'MiniBoardWindow.xaml missing'
 $t = Get-Content -LiteralPath $mbx -Raw
 $n = ([regex]::Matches($t, '<Popup x:Name="PopupEraser"', 'IgnoreCase')).Count
-Assert ($n -eq 1) ("PopupEraser 数量异常: " + $n)
+Assert ($n -eq 1) ("PopupEraser count: " + $n)
 $t = [regex]::Replace($t, '<Popup x:Name="PopupEraser".*?</Popup>\r?\n', '', [Text.RegularExpressions.RegexOptions]::Singleline)
-Write-Host 'PATCHED  移除 PopupEraser'
+Write-Host 'PATCHED  removed PopupEraser'
 
 Write-Host "== PHASE S2: 窗口内嵌橡皮大小条 =="
 $panel = @'
@@ -51,22 +52,27 @@ $panel = @'
                 <Border x:Name="ToolBar"
 '@
 $anchor = '<Border x:Name="ToolBar"'
-Assert ($t.Contains($anchor)) 'ToolBar 锚点缺失'
+Assert ($t.Contains($anchor)) 'ToolBar anchor missing'
 $t = $t.Replace($anchor, $panel)
 [IO.File]::WriteAllText($mbx, $t, $utf8)
-Write-Host 'PATCHED  插入 InlineEraserPanel'
+Write-Host 'PATCHED  inserted InlineEraserPanel'
 
-Write-Host "== PHASE S3: 校验 =="
+Write-Host "== PHASE S3: verify =="
 $n = Get-Content -LiteralPath $mbx -Raw
-Assert (-not $n.Contains('PopupEraser')) 'PopupEraser 仍存在'
-Assert ($n.Contains('x:Name="InlineEraserPanel"')) '内嵌橡皮条未写入'
-Assert ($n.Contains('x:Name="SliderMBEraser"')) '滑块名丢失'
-Assert ($n.Contains('x:Name="TextBlockMBEraserInfo"')) '提示文字名丢失'
-Write-Host 'OK  PHASE S 校验通过'
+Assert (-not $n.Contains('PopupEraser')) 'PopupEraser still present'
+Assert ($n.Contains('x:Name="InlineEraserPanel"')) 'inline panel missing'
+Assert ($n.Contains('x:Name="SliderMBEraser"')) 'slider name lost'
+Assert ($n.Contains('x:Name="TextBlockMBEraserInfo"')) 'info text lost'
+Write-Host 'OK  PHASE S verified'
 
 Write-Host "== PHASE T: 橡皮自动回笔 =="
 $fix7 = Join-Path $PSScriptRoot 'apply-stb-fix7.ps1'
 Assert (Test-Path -LiteralPath $fix7) 'missing stb-plus/apply-stb-fix7.ps1'
 & $fix7 -Root $Root -Version $Version
+
+Write-Host "== PHASE U: 抬笔回笔 + 设置开关 =="
+$fix8 = Join-Path $PSScriptRoot 'apply-stb-fix8.ps1'
+Assert (Test-Path -LiteralPath $fix8) 'missing stb-plus/apply-stb-fix8.ps1'
+& $fix8 -Root $Root -Version $Version
 
 Write-Host "STB FIX6 PATCHES DONE"
