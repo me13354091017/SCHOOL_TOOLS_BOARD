@@ -1,18 +1,20 @@
-# SchoolToolsBoard (STB) v1.0.1.16
+# SchoolToolsBoard (STB) v1.0.1.17
 
 > 底座：Ink Canvas Plus（clover-tree/Ink-Canvas-Plus，GPL-3.0）｜发行者：周之尧
 
-## 设置页开关卡片被拉成整页高
-上一版把「橡皮用完自动回到书写」卡片插在了 `Panel0` **外面**：锚点用的是 `<!-- 1 外观主题 -->` 注释，而那段注释在 `</StackPanel>` 之后，于是卡片变成 `ScrollViewer` 的直接子元素，`VerticalAlignment` 按拉伸算，开关被推到页面底部。
+## 旧的「组件」窗口下线
+之前点浮动栏上的「组件」会打开主界面组件窗（当前组件 + 组件库那两栏）。既然浮动栏已经接入同一套组件编辑方式，这个窗口就不再需要：
 
-本版做法：先按 `x:Name="SwAutoPenBack"` 定位已插入的卡片，往前取最近的 `<Border Style="StbCard">` 起点、往后取第一个 `</Border>` 终点，把整张卡摘下来；再以 `<!-- 1 外观主题 -->` 为锚点，回退找到最近的 `</StackPanel>`（就是 Panel0 的结尾），把卡片插回它前面。卡内没有嵌套 Border，摘取边界不会错位；脚本会断言“开关位置在 Panel0 之后、且在外观主题注之前”。
+- `SymbolIconComponents_MouseUp` 与 `BtnComponents_Click` 改为 `StbFloatBarWindow.ShowFor(this);`
+- 浮动栏与左侧竖栏两处入口文字由「组件」改为「浮动栏」
+- 旧窗口类仍保留在源码里（不删，避免牵连其他引用），但界面上已经没有任何入口能打开它
 
-## 快捷设置面板下方一大块空白
-浮动栏 `BorderTools` 在原布局里会随容器拉伸。加了 `VerticalAlignment="Top"`，让面板高度只跟内容走，背景不再向下拖出一段。
+## 「保存到其它」在哪里
+两处都能用：
+1. 浮动栏快捷设置面板 → 「墨迹」那一行第二个图标（两个文档叠起来、带向右箭头的 Copy 图标），就在「保存」右边；
+2. 本次新增：组件 · 浮动栏 → 工具库里的「保存到其它」，加到自定义浮动栏后点一下就会弹另存对话框。
 
-## 保留
-- 浮动栏接入组件系统（编辑浮动栏）
-- 橡皮抬笔后才回笔 + 设置页开关
+实现上把原来的另存逻辑抽成 `internal void StbSaveAsNow()`：浮动栏图标保留 `lastBorderMouseDownObject` 校验，组件条目直接调用，不用伪造 MouseDown 状态。
 
 ## 开源
 - 上游：https://github.com/clover-tree/Ink-Canvas-Plus （GPL-3.0）
