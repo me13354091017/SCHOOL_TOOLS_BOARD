@@ -5,15 +5,17 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
+using Microsoft.Win32;
 
 namespace InkCanvasPlus
 {
     /// <summary>
     /// 「插入函数」相关：浮动栏 f(x) 按钮、函数画板入口，以及把画好的坐标图作为可拖动图片放到白板上。
+    /// 注意：本项目自定义了 InkCanvasPlus.Canvas，故此处一律写全限定名 System.Windows.Controls.Canvas。
     /// </summary>
     public partial class MainWindow
     {
-        private Canvas _stbFuncLayer;
+        private System.Windows.Controls.Canvas _stbFuncLayer;
 
         private void StbBtnInsertFunc_Click(object sender, RoutedEventArgs e)
         {
@@ -56,23 +58,23 @@ namespace InkCanvasPlus
             StbFunctionWindow.ShowFor(this);
         }
 
-        private Canvas StbEnsureFuncLayer()
+        private System.Windows.Controls.Canvas StbEnsureFuncLayer()
         {
             if (_stbFuncLayer != null)
             {
                 return _stbFuncLayer;
             }
-            Grid root = Content as Grid;
+            System.Windows.Controls.Grid root = Content as System.Windows.Controls.Grid;
             if (root == null)
             {
                 return null;
             }
 
-            Canvas layer = new Canvas();
+            System.Windows.Controls.Canvas layer = new System.Windows.Controls.Canvas();
             layer.Background = null;
-            Grid.SetRowSpan(layer, Math.Max(1, root.RowDefinitions.Count));
-            Grid.SetColumnSpan(layer, Math.Max(1, root.ColumnDefinitions.Count));
-            Panel.SetZIndex(layer, 5000);
+            System.Windows.Controls.Grid.SetRowSpan(layer, Math.Max(1, root.RowDefinitions.Count));
+            System.Windows.Controls.Grid.SetColumnSpan(layer, Math.Max(1, root.ColumnDefinitions.Count));
+            System.Windows.Controls.Panel.SetZIndex(layer, 5000);
             root.Children.Add(layer);
             _stbFuncLayer = layer;
             return layer;
@@ -83,7 +85,7 @@ namespace InkCanvasPlus
         {
             try
             {
-                Canvas layer = StbEnsureFuncLayer();
+                System.Windows.Controls.Canvas layer = StbEnsureFuncLayer();
                 if (layer == null || bmp == null)
                 {
                     return;
@@ -92,7 +94,7 @@ namespace InkCanvasPlus
                 double width = 520d;
                 double height = width * ((double)bmp.PixelHeight / Math.Max(1d, bmp.PixelWidth));
 
-                Image img = new Image
+                System.Windows.Controls.Image img = new System.Windows.Controls.Image
                 {
                     Source = bmp,
                     Width = width,
@@ -101,7 +103,7 @@ namespace InkCanvasPlus
                     IsHitTestVisible = false
                 };
 
-                TextBlock cap = new TextBlock
+                System.Windows.Controls.TextBlock cap = new System.Windows.Controls.TextBlock
                 {
                     Text = caption,
                     FontSize = 11,
@@ -110,11 +112,11 @@ namespace InkCanvasPlus
                     IsHitTestVisible = false
                 };
 
-                StackPanel body = new StackPanel();
+                System.Windows.Controls.StackPanel body = new System.Windows.Controls.StackPanel();
                 body.Children.Add(img);
                 body.Children.Add(cap);
 
-                Border card = new Border
+                System.Windows.Controls.Border card = new System.Windows.Controls.Border
                 {
                     Background = Brushes.White,
                     BorderBrush = new SolidColorBrush(Color.FromRgb(0xD8, 0xDD, 0xE5)),
@@ -135,9 +137,9 @@ namespace InkCanvasPlus
                 layer.Children.Add(card);
 
                 double left = Math.Max(20d, (layer.ActualWidth - width) / 2d);
-                double top = 90d;
-                Canvas.SetLeft(card, left);
-                Canvas.SetTop(card, top);
+                double top = Math.Max(20d, 90d);
+                System.Windows.Controls.Canvas.SetLeft(card, left);
+                System.Windows.Controls.Canvas.SetTop(card, top);
 
                 Point start = new Point();
                 bool dragging = false;
@@ -156,8 +158,8 @@ namespace InkCanvasPlus
                         return;
                     }
                     Point p = ev.GetPosition(layer);
-                    Canvas.SetLeft(card, Math.Max(0d, Canvas.GetLeft(card) + p.X - start.X));
-                    Canvas.SetTop(card, Math.Max(0d, Canvas.GetTop(card) + p.Y - start.Y));
+                    System.Windows.Controls.Canvas.SetLeft(card, Math.Max(0d, System.Windows.Controls.Canvas.GetLeft(card) + p.X - start.X));
+                    System.Windows.Controls.Canvas.SetTop(card, Math.Max(0d, System.Windows.Controls.Canvas.GetTop(card) + p.Y - start.Y));
                     start = p;
                 };
                 card.MouseLeftButtonUp += (s, ev) =>
