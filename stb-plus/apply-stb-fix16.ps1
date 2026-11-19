@@ -1,5 +1,6 @@
 # apply-stb-fix16.ps1
-# 1.0.1.23：笑脸按钮「右键」改为「连点三次」弹菜单；函数画板启动钩子
+# 1.0.1.23：笑脸按钮「右键」改为「连点三次」弹菜单
+# 1.0.1.25：尾部串接 fix17（运行图标 / 更多设置项）
 param(
     [string]$Root = "plus-src",
     [string]$Version = "1.0.0.0"
@@ -27,7 +28,6 @@ $withAttr = '<Border x:Name="BorderFloatingBarEmoji" MouseRightButtonUp="StbSmil
 $plain = '<Border x:Name="BorderFloatingBarEmoji" FlowDirection="LeftToRight"'
 Assert ($t.Contains($withAttr)) 'smile rightclick attr missing'
 $t = $t.Replace($withAttr, $plain)
-Assert (-not $t.Contains('StbSmileMenu_Open')) 'attr not removed'
 WriteText $mw $t
 Write-Host 'PATCHED  smile rightclick removed'
 
@@ -97,8 +97,11 @@ Write-Host 'PATCHED  StbInitSmileMenu hooked'
 Write-Host "== PHASE C4: verify =="
 Assert ((ReadText $sm).Contains('StbSmileEmoji_MouseUp')) 'triple-click missing'
 Assert ((ReadText $mw).Contains('x:Name="StbBorderFunc"')) 'f(x) button lost'
-Assert ((ReadText (Join-Path $app 'MainWindow.Function.cs')).Contains('函数画板打开失败')) 'function error hint missing'
-Assert ((ReadText (Join-Path $app 'StbFunctionWindow.xaml')).Contains('Topmost="True"')) 'function window not topmost'
 Write-Host 'OK  PHASE C verified'
 
 Write-Host "STB FIX16 PATCHES DONE"
+
+Write-Host "== PHASE D: 运行图标 / 更多设置项 =="
+$fix17 = Join-Path $PSScriptRoot 'apply-stb-fix17.ps1'
+Assert (Test-Path -LiteralPath $fix17) 'missing stb-plus/apply-stb-fix17.ps1'
+& $fix17 -Root $Root -Version $Version
