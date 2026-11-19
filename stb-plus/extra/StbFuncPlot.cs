@@ -7,7 +7,6 @@ using System.Windows.Media;
 
 namespace InkCanvasPlus
 {
-    /// <summary>一条待绘制的曲线：表达式、颜色、编译后的求值函数。</summary>
     internal sealed class StbCurve
     {
         internal string Expr;
@@ -202,7 +201,7 @@ namespace InkCanvasPlus
                 dc.DrawLine(gridPen, new Point(px, 0), new Point(px, h));
                 if (Math.Abs(v) > step / 2d)
                 {
-                    dc.DrawText(MakeText(Fmt(v, step), tf, dpi), new Point(px + 3d, Math.Min(h - 15d, Math.Max(2d, cy + 3d)));
+                    dc.DrawText(MakeText(Fmt(v, step), tf, dpi), new Point(px + 3d, Math.Min(h - 15d, Math.Max(2d, cy + 3d))));
                 }
             }
 
