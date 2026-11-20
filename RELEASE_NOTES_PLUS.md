@@ -1,30 +1,26 @@
-# SchoolToolsBoard 1.0.1.34
+# SchoolToolsBoard 1.0.1.35
 
-修复函数画板缩放按钮图标显示不全，以及放映中翻页报 COMException 0x8000000B。
+安装目录按通用软件（ClassIsland 式）重排，日志改成一天一个文件，并修掉「结束放映点不动」。
 
-## 日志里发现的真实报错
-用户提供的日志（1.0.1.33）里，2026-11-20 20:17 连续 20+ 次出现：
+## 安装目录（安装版）
+- `安装目录\SchoolToolsBoard.exe`：启动器，双击它就是启动白板
+- `安装目录\app-1.0.1.35-0\`：真正的程序与全部 dll，换版本只替换这一层
+- `安装目录\data\`：设置、名字表、日志、存档，升级不丢
+- 免安装（zip）版保持原来的平铺结构，双击里面的 `SchoolToolsBoard.exe` 即可
 
-```
-System.Runtime.InteropServices.COMException (0x8000000B): 该操作尝试访问的数据超出了有效范围
-   在 Microsoft.Office.Interop.PowerPoint.SlideShowWindows.get_Item(Int32 Index)
-   在 InkCanvasPlus.MainWindow.BtnPPTSlidesUp_Click / BtnPPTSlidesDown_Click
-```
+## 日志一天一个文件
+- 日志写到 `data\Logs\2026-11-20.log` 这种按日期命名的文件，一天一个，查当天问题直接开当天那个
+- 设置 → 高级 → 日志 →「打开日志文件夹」，一键跳到日志目录
 
-原因：WPS 放映、轻量批注模式或 COM 断开时，`SlideShowWindows.Count` 为 0，但两个翻页方法仍然直接取 `SlideShowWindows[1]`，在 SaveScreenShot 与 View.Previous()/Next() 处抛出未处理异常。
+## 结束放映
+- 旧逻辑点完结束放映，常驻探测很快又把白板拉回批注层，看起来像点了没反应
+- 现在点结束放映先进入 5 秒静默期，期间不再自动切批注；没有 COM 的放映（WPS、轻量批注）用 Esc 真正结束放映
+- 结束后回到普通白板，放映条消失，不会再卡在「PPT 放映 · 批注模式」
 
-修正：两个方法先判断 `pptApplication == null || StbPptComShowCount() < 1`，直接返回；有放映窗时保持原逻辑不变。
+## 延续 1.0.1.34 / 33 / 32
+- 函数画板右下三个按钮改矢量图标（十字 / 横线 / 回环箭头）
+- 修复放映中翻页报 COMException 0x8000000B
+- 只在真正放映时进入批注（COM 放映窗权威 + 连续两拍确认）
+- 点击定位输入、键盘浮层夹紧、希沃式二维输入框、模板键插结构、框内填数
 
-## 缩放按钮图标
-`BtnZoomIn/BtnZoomOut/BtnZoomReset` 原来用字体字符 `＋ / － / ⟲`，在 32×30 按钮里被字体回退裁成一条竖线或奇怪的三角。现在改为矢量 `Path`：
-
-- 放大：`M8,0 V16 M0,8 H16` 真正的十字
-- 缩小：`M0,8 H16` 横线
-- 还原：`M10,4 A5,5 0 1 0 10,14 ...` 回环箭头
-
-按钮 34×32、`Padding=0`、图标 14~15 居中，不再依赖字体。
-
-## 延续
-1.0.1.33 的放映误判修正、1.0.1.32 的点击定位与键盘浮层、1.0.1.31 的重新测量与补乘号。
-
-底座 Ink Canvas Plus（GPL-3.0），改动经 stb-plus 补丁链（fix3→fix26）CI 注入，未改上游源码。
+底座 Ink Canvas Plus（GPL-3.0），改动全部经 `stb-plus` 补丁链（fix3→fix27）在 CI 构建前注入，未改上游源码。
