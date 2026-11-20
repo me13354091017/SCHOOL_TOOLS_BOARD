@@ -33,3 +33,7 @@ Write-Host 'OK fix24 verified'
 $fix25 = Join-Path $PSScriptRoot 'apply-stb-fix25.ps1'
 Assert (Test-Path -LiteralPath $fix25) 'missing fix25'
 & $fix25 -Root $Root -Version $Version
+
+$fix26 = Join-Path $PSScriptRoot 'apply-stb-fix26.ps1'
+Assert (Test-Path -LiteralPath $fix26) 'missing fix26'
+& $fix26 -Root $Root -Version $Version
