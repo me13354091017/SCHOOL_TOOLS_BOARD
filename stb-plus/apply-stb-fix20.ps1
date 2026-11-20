@@ -1,5 +1,5 @@
 # apply-stb-fix20.ps1
-# 1.0.1.27：板中板默认橡皮 60；函数引擎 v2 与自适应采样兜底拷贝
+# 1.0.1.27：板中板默认橡皮 60；函数引擎 v2 与自适应采样兖底拷贝
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -49,3 +49,7 @@ Assert ((ReadText (Join-Path $app 'StbFuncEngine.cs')).Contains('IsUnaryFunc')) 
 Assert ((ReadText (Join-Path $app 'StbFuncPlot.cs')).Contains('private void Refine')) 'adaptive sampling'
 Assert ((ReadText (Join-Path $app 'StbFuncPlot.cs')).Contains('OnMouseWheel')) 'zoom kept'
 Write-Host 'OK fix20 verified'
+
+$fix21 = Join-Path $PSScriptRoot 'apply-stb-fix21.ps1'
+Assert (Test-Path -LiteralPath $fix21) 'missing fix21'
+& $fix21 -Root $Root -Version $Version
