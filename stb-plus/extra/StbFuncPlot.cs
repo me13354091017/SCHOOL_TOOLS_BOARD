@@ -7,6 +7,7 @@ using System.Windows.Media;
 
 namespace InkCanvasPlus
 {
+    /// <summary>一条待绘制的曲线：表达式、颜色、编译后的求值函数。</summary>
     internal sealed class StbCurve
     {
         internal string Expr;
@@ -173,20 +174,17 @@ namespace InkCanvasPlus
             double step = NiceStep(28d / unit);
             double minor = step / 5d;
 
-            if (minor * unit > 3d)
+            int guard = 0;
+            double offX = cx % (minor * unit);
+            for (double gx = offX; gx <= w && guard < 3000; gx += minor * unit, guard++)
             {
-                int guard = 0;
-                double offX = cx % (minor * unit);
-                for (double gx = offX; gx <= w && guard < 3000; gx += minor * unit, guard++)
-                {
-                    dc.DrawLine(subPen, new Point(gx, 0), new Point(gx, h));
-                }
-                guard = 0;
-                double offY = cy % (minor * unit);
-                for (double gy = offY; gy <= h && guard < 3000; gy += minor * unit, guard++)
-                {
-                    dc.DrawLine(subPen, new Point(0, gy), new Point(w, gy));
-                }
+                dc.DrawLine(subPen, new Point(gx, 0), new Point(gx, h));
+            }
+            guard = 0;
+            double offY = cy % (minor * unit);
+            for (double gy = offY; gy <= h && guard < 3000; gy += minor * unit, guard++)
+            {
+                dc.DrawLine(subPen, new Point(0, gy), new Point(w, gy));
             }
 
             double wx0 = CenterX - (w / 2d) / unit;
@@ -245,53 +243,165 @@ namespace InkCanvasPlus
                 Pen pen = new Pen(new SolidColorBrush(c.Color), 1.8d);
                 pen.Freeze();
 
+                // 自适应采样（参考 Desmos / padowan Graph）：粗网格 + 递归细分，
+                // 曲率大的地方加密，定义域边界二分逼近，渐近线处断开不画竖线。
+                List<Point?> samples = new List<Point?>(1024);
+                double stepPx = 6d;
+                double prevPx = -stepPx;
+                double prevPy = SampleY(c.F, prevPx, w, h, unit);
+                for (double px = 0d; px <= w + stepPx; px += stepPx)
+                {
+                    double clamped = Math.Min(px, w);
+                    double py = SampleY(c.F, clamped, w, h, unit);
+                    Refine(c.F, prevPx, prevPy, clamped, py, 0, samples, w, h, unit);
+                    prevPx = clamped;
+                    prevPy = py;
+                    if (clamped >= w)
+                    {
+                        break;
+                    }
+                }
+                samples.Add(MakePoint(prevPx, ToScreenY(prevPy, h, unit), h));
+
                 StreamGeometry geo = new StreamGeometry();
                 using (StreamGeometryContext ctx = geo.Open())
                 {
                     bool open = false;
-                    double prevY = 0d;
-                    for (double px = 0d; px <= w; px += 0.5d)
+                    Point prev = new Point();
+                    double prevWorld = 0d;
+                    foreach (Point? nullable in samples)
                     {
-                        double xv = (px - w / 2d) / unit + CenterX;
-                        double yv;
-                        try
-                        {
-                            yv = c.F(xv);
-                        }
-                        catch
-                        {
-                            yv = double.NaN;
-                        }
-                        if (double.IsNaN(yv) || double.IsInfinity(yv))
+                        if (!nullable.HasValue)
                         {
                             open = false;
                             continue;
                         }
-                        double py = h / 2d - (yv - CenterY) * unit;
-                        if (py < -h || py > h * 2d)
-                        {
-                            open = false;
-                            continue;
-                        }
+                        Point p = nullable.Value;
+                        double world = CenterY - (p.Y - h / 2d) / unit;
                         if (!open)
                         {
-                            ctx.BeginFigure(new Point(px, py), false, false);
+                            ctx.BeginFigure(p, false, false);
                             open = true;
-                        }
-                        else if (Math.Abs(py - prevY) > h * 0.6d)
-                        {
-                            ctx.BeginFigure(new Point(px, py), false, false);
                         }
                         else
                         {
-                            ctx.LineTo(new Point(px, py), true, false);
+                            double jump = Math.Abs(p.Y - prev.Y);
+                            bool opposite = (world - CenterY) * (prevWorld - CenterY) < 0d;
+                            bool asymptote = false;
+                            if (jump > h * 0.85d && opposite)
+                            {
+                                double xm = (prev.X + p.X) / 2d;
+                                double ym = SampleY(c.F, xm, w, h, unit);
+                                double maxEdge = Math.Max(Math.Abs(world - CenterY), Math.Abs(prevWorld - CenterY));
+                                asymptote = double.IsNaN(ym) || Math.Abs(ym - CenterY) > 2d * maxEdge;
+                            }
+                            if (asymptote)
+                            {
+                                ctx.BeginFigure(p, false, false);
+                            }
+                            else
+                            {
+                                ctx.LineTo(p, true, false);
+                            }
                         }
-                        prevY = py;
+                        prev = p;
+                        prevWorld = world;
                     }
                 }
                 geo.Freeze();
                 dc.DrawGeometry(null, pen, geo);
             }
+        }
+
+        private double SampleY(Func<double, double> f, double px, double w, double h, double unit)
+        {
+            double xv = (px - w / 2d) / unit + CenterX;
+            try
+            {
+                double yv = f(xv);
+                if (double.IsNaN(yv) || double.IsInfinity(yv))
+                {
+                    return double.NaN;
+                }
+                return yv;
+            }
+            catch
+            {
+                return double.NaN;
+            }
+        }
+
+        private static Point? MakePoint(double px, double worldY, double h)
+        {
+            if (double.IsNaN(worldY))
+            {
+                return null;
+            }
+            return new Point(px, worldY);
+        }
+
+        /// <summary>递归细分：中点偏离弦超过 0.3px 就继续切；NaN 边界二分找定义域端点。</summary>
+        private void Refine(Func<double, double> f, double x0, double y0, double x1, double y1,
+            int depth, List<Point?> samples, double w, double h, double unit)
+        {
+            if (depth >= 7 || x1 - x0 < 0.35d)
+            {
+                samples.Add(MakePoint(x0, ToScreenY(y0, h, unit), h));
+                return;
+            }
+
+            bool f0 = !double.IsNaN(y0);
+            bool f1 = !double.IsNaN(y1);
+            double xm = (x0 + x1) / 2d;
+            double ym = SampleY(f, xm, w, h, unit);
+            bool fm = !double.IsNaN(ym);
+
+            bool need;
+            if (f0 && f1 && fm)
+            {
+                double sy0 = ToScreenY(y0, h, unit);
+                double sy1 = ToScreenY(y1, h, unit);
+                double sym = ToScreenY(ym, h, unit);
+                bool allAbove = sy0 < -h * 0.5d && sy1 < -h * 0.5d && sym < -h * 0.5d;
+                bool allBelow = sy0 > h * 1.5d && sy1 > h * 1.5d && sym > h * 1.5d;
+                need = !allAbove && !allBelow && Math.Abs(sym - (sy0 + sy1) / 2d) > 0.3d;
+            }
+            else
+            {
+                need = f0 != f1 || f0 != fm || f1 != fm;
+                if (!f0 && !f1 && !fm && depth >= 3)
+                {
+                    need = false;
+                }
+            }
+
+            if (need)
+            {
+                Refine(f, x0, y0, xm, ym, depth + 1, samples, w, h, unit);
+                Refine(f, xm, ym, x1, y1, depth + 1, samples, w, h, unit);
+            }
+            else
+            {
+                samples.Add(MakePoint(x0, ToScreenY(y0, h, unit), h));
+            }
+        }
+
+        private double ToScreenY(double worldY, double h, double unit)
+        {
+            if (double.IsNaN(worldY))
+            {
+                return double.NaN;
+            }
+            double py = h / 2d - (worldY - CenterY) * unit;
+            if (py < -h * 3d)
+            {
+                py = -h * 3d;
+            }
+            if (py > h * 4d)
+            {
+                py = h * 4d;
+            }
+            return py;
         }
 
         private static string Fmt(double v, double step)
