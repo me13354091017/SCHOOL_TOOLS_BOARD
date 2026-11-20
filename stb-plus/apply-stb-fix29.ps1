@@ -1,4 +1,4 @@
-﻿# apply-stb-fix29.ps1
+# apply-stb-fix29.ps1
 # 1.0.1.36：PPT 放映判定回到 1.0.1.29 的做法（只认 COM 放映窗，不再用 Win32 类名/全屏置顶去猜），
 # 并补上异常重置：PowerPoint 被任务管理器结束、崩溃、或先关文稿再退出时，把批注界面收回去、COM 重新连。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
@@ -142,3 +142,7 @@ Assert (-not $p2.Contains('if (hasShow && !StbPptInUserEndHold())')) 'scan enter
 $s2 = ReadText $ps
 Assert ($s2.Contains('StbPptExitLight();')) 'end reset'
 Write-Host 'OK fix29 verified'
+
+$fix30 = Join-Path $PSScriptRoot 'apply-stb-fix30.ps1'
+Assert (Test-Path -LiteralPath $fix30) 'missing fix30'
+& $fix30 -Root $Root -Version $Version
