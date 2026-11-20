@@ -141,6 +141,7 @@ jobs:
           if (-not (Test-Path $iscc)) { try { choco install innosetup -y --no-progress *>&1 | Out-Null } catch {} }
           if (-not (Test-Path $iscc)) { throw 'ISCC not found' }
           Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri 'https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/ChineseSimplified.isl' -OutFile 'C:\Program Files (x86)\Inno Setup 6\Languages\ChineseSimplified.isl'
+          & pwsh -NoProfile -File 'stb-plus/build-launcher.ps1' -Root 'plus-src'
           & $iscc 'plus-src\packaging\setup.iss' *>&1 | Tee-Object -FilePath iscc-plus.log
           $exe = Get-ChildItem 'plus-src/packaging/output' -Filter 'SchoolToolsBoard-Setup-*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $exe) {
