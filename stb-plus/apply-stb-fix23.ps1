@@ -26,14 +26,14 @@ Assert (Test-Path -LiteralPath $srcF) 'missing extra/MainWindow.PptWatch.cs'
 Copy-Item -LiteralPath $srcF -Destination (Join-Path $app 'MainWindow.PptWatch.cs') -Force
 Write-Host 'COPY MainWindow.PptWatch.cs'
 
-# ---------- P2 启动常驻探测 ----------
+# ---------- P2 启动常驻探测（间隔已被组件补丁改为 300，按正则匹配任意值） ----------
 $wc = Join-Path $app 'MainWindow.xaml.cs'
 $t = ReadText $wc
-$new = @'
-timerCheckPPT.Interval = 1000;
-            StbInitPptWatch();
-'@
-$t = ReplaceOnce $t 'timerCheckPPT.Interval = 1000;' $new 'init watch'
+$m = [regex]::Match($t, 'timerCheckPPT\.Interval\s*=\s*\d+;')
+Assert ($m.Success) 'init interval anchor missing'
+Assert ($t.IndexOf('StbInitPptWatch') -lt 0) 'init watch already patched'
+$ins = $m.Value + "`r`n            StbInitPptWatch();"
+$t = $t.Substring(0, $m.Index) + $ins + $t.Substring($m.Index + $m.Length)
 WriteText $wc $t
 Write-Host 'PATCHED init watch'
 
