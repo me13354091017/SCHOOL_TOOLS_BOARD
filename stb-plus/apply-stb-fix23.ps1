@@ -68,3 +68,7 @@ Assert ($watch.Contains('StbPptEnterLight')) 'watch light'
 Assert ((ReadText $wc).Contains('StbInitPptWatch();')) 'watch init'
 Assert ((ReadText $ps).Contains('_stbPptLight || StbPptComShowCount() < 1')) 'end guard'
 Write-Host 'OK fix23 verified'
+
+$fix24 = Join-Path $PSScriptRoot 'apply-stb-fix24.ps1'
+Assert (Test-Path -LiteralPath $fix24) 'missing fix24'
+& $fix24 -Root $Root -Version $Version
