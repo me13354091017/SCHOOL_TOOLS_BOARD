@@ -1,4 +1,4 @@
-﻿# apply-stb-fix28.ps1
+# apply-stb-fix28.ps1
 # 1.0.1.35 补强：
 # 1) 数据目录识别加硬条件：只有「程序目录名以 app- 开头」且上一级存在 data 时，才把 RootPath 指到上一级 data，
 #    避免免安装版放在 D:\Tools 这类目录时，碰巧存在的 data 目录把设置、日志带走；
@@ -23,7 +23,6 @@ function ReplaceOnce([string]$t, [string]$old, [string]$new, [string]$tag) {
 # ---------- A. 收紧数据目录判定 ----------
 $ap = Join-Path $app 'App.xaml.cs'
 $t = ReadText $ap
-Assert ($t.Contains('string stbUp')) 'fix27 rootpath missing'
 $old = @'
                     if (System.IO.Directory.Exists(System.IO.Path.Combine(stbUp, "data")))
                     {
@@ -38,6 +37,7 @@ $new = @'
                         RootPath = System.IO.Path.Combine(stbUp, "data") + "\\";
                     }
 '@
+Assert ($t.Contains('string stbUp')) 'fix27 rootpath missing'
 $t = ReplaceOnce $t $old $new 'rootpath tighten'
 WriteText $ap $t
 Write-Host 'PATCHED rootpath tighten'
@@ -74,3 +74,7 @@ Assert ($a2.Contains('StartsWith("app-"')) 'rootpath tighten assert'
 $i2 = ReadText $iss
 Assert ($i2.Contains('{app}\runtimes')) 'install delete assert'
 Write-Host 'OK fix28 verified'
+
+$fix29 = Join-Path $PSScriptRoot 'apply-stb-fix29.ps1'
+Assert (Test-Path -LiteralPath $fix29) 'missing fix29'
+& $fix29 -Root $Root -Version $Version
