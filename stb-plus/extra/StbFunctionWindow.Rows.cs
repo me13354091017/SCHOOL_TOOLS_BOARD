@@ -8,7 +8,7 @@ using System.Windows.Media;
 namespace InkCanvasPlus
 {
     /// <summary>
-    /// 希沃白板5 同款表达式行：标题「表达式 n」+ 右上 ×；输入行 y= + 输入框 + 框右绿色键盘图标。
+    /// 希沃白板5 同款表达式行：标题「表达式 n」+ 右上 ×；输入行 y= + 二维公式框 + 框右绿色键盘图标。
     /// 错误提示、增加表达式 n/6、插入按钮禁用态均对照希沃实物。
     /// </summary>
     public partial class StbFunctionWindow
@@ -69,15 +69,12 @@ namespace InkCanvasPlus
                 Margin = new Thickness(0, 0, 6, 0)
             };
 
-            TextBox box = new TextBox
+            StbMathBox box = new StbMathBox
             {
                 Text = expr.StartsWith("y=") ? expr.Substring(2) : expr,
                 FontSize = 14,
-                BorderThickness = new Thickness(1),
-                BorderBrush = new SolidColorBrush(Color.FromRgb(0xE3, 0xE6, 0xEC)),
-                Background = Brushes.White,
-                Padding = new Thickness(6, 4, 6, 4),
-                VerticalContentAlignment = VerticalAlignment.Center
+                MinHeight = 30,
+                VerticalAlignment = VerticalAlignment.Center
             };
 
             Button kb = new Button
