@@ -43,3 +43,7 @@ Assert ((ReadText (Join-Path $app 'StbMathBox.Text.cs')).Contains('FixParents'))
 Assert ((ReadText (Join-Path $app 'StbKeypad.cs')).Contains('@T:nroot')) 'keypad templates'
 Assert ((ReadText (Join-Path $app 'StbFunctionWindow.Rows.cs')).Contains('StbMathBox box')) 'rows mathbox'
 Write-Host 'OK fix22 verified'
+
+$fix23 = Join-Path $PSScriptRoot 'apply-stb-fix23.ps1'
+Assert (Test-Path -LiteralPath $fix23) 'missing fix23'
+& $fix23 -Root $Root -Version $Version
