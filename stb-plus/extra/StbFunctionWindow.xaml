@@ -102,12 +102,24 @@
                 <local:StbFuncPlot x:Name="Plot" Margin="10" MinWidth="360" MinHeight="300" />
             </Border>
             <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,14,14">
-                <Button x:Name="BtnZoomIn" Content="＋" Width="32" Height="30" FontSize="16" Margin="0,0,0,6"
-                        ToolTip="放大（也可滚轮向上）" Click="StbZoomIn_Click" />
-                <Button x:Name="BtnZoomOut" Content="－" Width="32" Height="30" FontSize="16" Margin="0,0,0,6"
-                        ToolTip="缩小（也可滚轮向下）" Click="StbZoomOut_Click" />
-                <Button x:Name="BtnZoomReset" Content="⟲" Width="32" Height="30" FontSize="14"
-                        ToolTip="还原视图" Click="StbZoomReset_Click" />
+                <Button x:Name="BtnZoomIn" Width="34" Height="32" Padding="0" Margin="0,0,0,6"
+                        Background="Transparent" BorderBrush="#FFDDE1E8" BorderThickness="1" Cursor="Hand"
+                        ToolTip="放大（也可滚轮向上）" Click="StbZoomIn_Click">
+                    <Path Data="M8,0 V16 M0,8 H16" Stroke="#FF1F2329" StrokeThickness="1.8"
+                          Width="14" Height="14" Stretch="Uniform" />
+                </Button>
+                <Button x:Name="BtnZoomOut" Width="34" Height="32" Padding="0" Margin="0,0,0,6"
+                        Background="Transparent" BorderBrush="#FFDDE1E8" BorderThickness="1" Cursor="Hand"
+                        ToolTip="缩小（也可滚轮向下）" Click="StbZoomOut_Click">
+                    <Path Data="M0,8 H16" Stroke="#FF1F2329" StrokeThickness="1.8"
+                          Width="14" Height="14" Stretch="Uniform" />
+                </Button>
+                <Button x:Name="BtnZoomReset" Width="34" Height="32" Padding="0"
+                        Background="Transparent" BorderBrush="#FFDDE1E8" BorderThickness="1" Cursor="Hand"
+                        ToolTip="还原视图" Click="StbZoomReset_Click">
+                    <Path Data="M10,4 A5,5 0 1 0 10,14 M10,4 L10,1 M10,4 L7,4" Stroke="#FF1F2329" StrokeThickness="1.8"
+                          Width="15" Height="15" Stretch="Uniform" />
+                </Button>
             </StackPanel>
         </Grid>
 
