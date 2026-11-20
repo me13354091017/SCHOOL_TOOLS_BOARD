@@ -20,7 +20,7 @@ foreach ($name in @('StbFuncPlot.cs', 'StbMathText.cs', 'StbFunctionWindow.xaml'
     Write-Host ("COPY " + $name)
 }
 
-# ---------- F2 window code ----------
+# ---------- F2 window code: preload + preview ----------
 $wc = Join-Path $app 'StbFunctionWindow.xaml.cs'
 $wct = ReadText $wc
 if (-not $wct.Contains('StbPreloadExpr')) {
@@ -41,7 +41,7 @@ if (-not $wct.Contains('StbRefreshPreview();')) {
 }
 WriteText $wc $wct
 
-# ---------- F3 card toolbar ----------
+# ---------- F3 inserted card toolbar ----------
 $fn = Join-Path $app 'MainWindow.Function.cs'
 $ft = ReadText $fn
 if (-not $ft.Contains('StbOpenFunctionWith')) {
@@ -59,37 +59,42 @@ if (-not $ft.Contains('StbOpenFunctionWith')) {
 if (-not $ft.Contains('tbDel.Click')) {
     $anchor = 'layer.Children.Add(card);'
     Assert ($ft.Contains($anchor)) 'card add anchor missing'
-    $toolbar = "                System.Windows.Controls.Grid cardRoot = new System.Windows.Controls.Grid();`r`n" +
-      "                card.Child = null;`r`n" +
-      "                cardRoot.Children.Add(body);`r`n" +
-      "                Func<string, Button> mkBtn = (label) => new Button`r`n" +
-      "                {`r`n" +
-      "                    Content = label,`r`n" +
-      "                    FontSize = 10,`r`n" +
-      "                    Padding = new Thickness(6, 1, 6, 1),`r`n" +
-      "                    Margin = new Thickness(3, 0, 0, 0),`r`n" +
-      "                    Background = new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),`r`n" +
-      "                    BorderBrush = new SolidColorBrush(Color.FromRgb(0xD8, 0xDD, 0xE5)),`r`n" +
-      "                    BorderThickness = new Thickness(1),`r`n" +
-      "                    Cursor = Cursors.Hand`r`n" +
-      "                };`r`n" +
-      "                Button tbEdit = mkBtn(`"编辑`");`r`n" +
-      "                Button tbTop = mkBtn(`"置顶`");`r`n" +
-      "                Button tbDel = mkBtn(`"删除`");`r`n" +
-      "                System.Windows.Controls.StackPanel tools = new System.Windows.Controls.StackPanel`r`n" +
-      "                {`r`n" +
-      "                    Orientation = Orientation.Horizontal,`r`n" +
-      "                    HorizontalAlignment = HorizontalAlignment.Right,`r`n" +
-      "                    VerticalAlignment = VerticalAlignment.Top`r`n" +
-      "                };`r`n" +
-      "                tools.Children.Add(tbEdit);`r`n" +
-      "                tools.Children.Add(tbTop);`r`n" +
-      "                tools.Children.Add(tbDel);`r`n" +
-      "                cardRoot.Children.Add(tools);`r`n" +
-      "                card.Child = cardRoot;`r`n`r`n" +
-      "                tbDel.Click += (s2, e2) => { layer.Children.Remove(card); e2.Handled = true; };`r`n" +
-      "                tbTop.Click += (s2, e2) => { System.Windows.Controls.Panel.SetZIndex(card, 2000); e2.Handled = true; };`r`n" +
-      "                tbEdit.Click += (s2, e2) => { StbOpenFunctionWith(caption); e2.Handled = true; };`r`n`r`n"
+    $toolbar = @'
+                System.Windows.Controls.Grid cardRoot = new System.Windows.Controls.Grid();
+                card.Child = null;
+                cardRoot.Children.Add(body);
+                Func<string, Button> mkBtn = (label) => new Button
+                {
+                    Content = label,
+                    FontSize = 10,
+                    Padding = new Thickness(6, 1, 6, 1),
+                    Margin = new Thickness(3, 0, 0, 0),
+                    Background = new SolidColorBrush(Color.FromArgb(235, 255, 255, 255)),
+                    BorderBrush = new SolidColorBrush(Color.FromRgb(0xD8, 0xDD, 0xE5)),
+                    BorderThickness = new Thickness(1),
+                    Cursor = Cursors.Hand
+                };
+                Button tbEdit = mkBtn("编辑");
+                Button tbTop = mkBtn("置顶");
+                Button tbDel = mkBtn("删除");
+                System.Windows.Controls.StackPanel tools = new System.Windows.Controls.StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Top
+                };
+                tools.Children.Add(tbEdit);
+                tools.Children.Add(tbTop);
+                tools.Children.Add(tbDel);
+                cardRoot.Children.Add(tools);
+                card.Child = cardRoot;
+
+                tbDel.Click += (s2, e2) => { layer.Children.Remove(card); e2.Handled = true; };
+                tbTop.Click += (s2, e2) => { System.Windows.Controls.Panel.SetZIndex(card, 2000); e2.Handled = true; };
+                tbEdit.Click += (s2, e2) => { StbOpenFunctionWith(caption); e2.Handled = true; };
+
+'@
+    $toolbar = $toolbar.Replace("`r`n", "`r`n")
     $i = $ft.IndexOf($anchor)
     $lineStart = $ft.LastIndexOf("`n", $i) + 1
     $ft = $ft.Substring(0, $lineStart) + $toolbar + $ft.Substring($lineStart)
@@ -105,3 +110,8 @@ Assert ((ReadText (Join-Path $app 'StbFuncPlot.cs')).Contains('OnMouseWheel')) '
 Assert ((ReadText (Join-Path $app 'StbMathText.cs')).Contains('StbMath')) 'math renderer'
 Assert ((ReadText (Join-Path $app 'StbFunctionWindow.xaml')).Contains('StbZoomIn_Click')) 'zoom buttons'
 Write-Host 'OK fix19 verified'
+
+# 链到 fix20
+$fix20 = Join-Path $PSScriptRoot 'apply-stb-fix20.ps1'
+Assert (Test-Path -LiteralPath $fix20) 'missing fix20'
+& $fix20 -Root $Root -Version $Version
