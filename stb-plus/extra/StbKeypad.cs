@@ -12,7 +12,7 @@ namespace InkCanvasPlus
     /// 希沃白板5 同款快捷输入键盘（布局对照 EasiNote 5.2.4 实物）：
     /// 左米色数字区 7 8 9 + / 4 5 6 - / 1 2 3 × / 0(双宽) . ÷ ；
     /// 右白色函数区 sin cos tan x / e π log2 ln / 幂 根 平方 / 绝对值 括号 分数，
-    /// 红色退格、绿色回车（跨两行）、左右移动光标键。
+    /// 红色退格、绿色回车（跨两行）、左右移动光标键。模板键作用于二维公式框。
     /// </summary>
     public partial class StbFunctionWindow
     {
@@ -134,9 +134,9 @@ namespace InkCanvasPlus
                 fn.Children.Add(b);
             };
 
-            put("sin", "sin(@)", 0, 0, 1, 1);
-            put("cos", "cos(@)", 0, 1, 1, 1);
-            put("tan", "tan(@)", 0, 2, 1, 1);
+            put("sin", "@T:func:sin", 0, 0, 1, 1);
+            put("cos", "@T:func:cos", 0, 1, 1, 1);
+            put("tan", "@T:func:tan", 0, 2, 1, 1);
             put(new TextBlock { Text = "x", FontStyle = FontStyles.Italic, FontSize = 15, Foreground = new SolidColorBrush(KeyFg) }, "x", 0, 3, 1, 1);
             Button back = MakeCell("⌫", "@BACK", Colors.White, WhiteLine, Color.FromRgb(0xD9, 0x30, 0x25), 62, 52);
             Grid.SetRow(back, 0); Grid.SetColumn(back, 4); Grid.SetColumnSpan(back, 2);
@@ -144,22 +144,22 @@ namespace InkCanvasPlus
 
             put("e", "e", 1, 0, 1, 1);
             put("π", "π", 1, 1, 1, 1);
-            put(SubLog(), "log2(@)", 1, 2, 1, 1);
-            put("ln□", "ln(@)", 1, 3, 1, 1);
+            put(SubLog(), "@T:logb", 1, 2, 1, 1);
+            put("ln□", "@T:func:ln", 1, 3, 1, 1);
             Button enter = MakeCell("↵", "@RUN", Colors.White, WhiteLine, Color.FromRgb(0x1F, 0x8F, 0x5F), 62, 104);
             enter.FontSize = 20;
             Grid.SetRow(enter, 1); Grid.SetColumn(enter, 4); Grid.SetColumnSpan(enter, 2); Grid.SetRowSpan(enter, 2);
             fn.Children.Add(enter);
 
-            put(Sup("□", "x"), "^x", 2, 0, 1, 1);
-            put("ⁿ√□", "root(@,)", 2, 1, 1, 1);
-            put("√□", "√(@)", 2, 2, 1, 1);
-            put(Sup("x", "□"), "^", 2, 3, 1, 1);
+            put(Sup("□", "x"), "@T:powx", 2, 0, 1, 1);
+            put("ⁿ√□", "@T:nroot", 2, 1, 1, 1);
+            put("√□", "@T:sqrt", 2, 2, 1, 1);
+            put(Sup("x", "□"), "@T:pow", 2, 3, 1, 1);
 
-            put("|□|", "|@|", 3, 0, 1, 1);
+            put("|□|", "@T:abs", 3, 0, 1, 1);
             put("(", "(", 3, 1, 1, 1);
             put(")", ")", 3, 2, 1, 1);
-            put(Frac(), "(@)/()", 3, 3, 1, 1);
+            put(Frac(), "@T:frac", 3, 3, 1, 1);
             put("←", "@LEFT", 3, 4, 1, 1);
             put("→", "@RIGHT", 3, 5, 1, 1);
 
@@ -177,7 +177,7 @@ namespace InkCanvasPlus
         }
 
         /// <summary>行内绿色键盘图标：把键盘浮层锚到该行输入框下方（希沃式）。</summary>
-        internal void StbOpenKeypadFor(TextBox box, Button anchor)
+        internal void StbOpenKeypadFor(StbMathBox box, Button anchor)
         {
             _activeBox = box;
             if (_keypadPopup == null)
@@ -191,7 +191,7 @@ namespace InkCanvasPlus
             box.Focus();
         }
 
-        /// <summary>把符号/函数片段插到当前表达式光标处；@ 表示插入后光标停留位置。</summary>
+        /// <summary>键盘按键 → 二维公式框操作；@T: 为模板键，其余为字符。</summary>
         private void StbInsertToken(string token)
         {
             if (token == "@RUN")
@@ -201,7 +201,7 @@ namespace InkCanvasPlus
                 return;
             }
 
-            TextBox box = _activeBox;
+            StbMathBox box = _activeBox;
             if (box == null && _rows.Count > 0)
             {
                 box = _rows[_rows.Count - 1].Box;
@@ -211,47 +211,30 @@ namespace InkCanvasPlus
                 return;
             }
 
-            string current = box.Text == null ? string.Empty : box.Text;
-            int start = box.SelectionStart < 0 ? current.Length : box.SelectionStart;
-            int sel = box.SelectionLength < 0 ? 0 : box.SelectionLength;
-            int caret = start;
-
             if (token == "@BACK")
             {
-                if (sel > 0)
-                {
-                    box.Text = current.Remove(start, sel);
-                }
-                else if (start > 0)
-                {
-                    box.Text = current.Remove(start - 1, 1);
-                    caret = start - 1;
-                }
+                box.Backspace();
             }
             else if (token == "@LEFT")
             {
-                caret = Math.Max(0, start - 1);
+                box.MoveLeft();
             }
             else if (token == "@RIGHT")
             {
-                caret = Math.Min(current.Length, start + 1);
+                box.MoveRight();
+            }
+            else if (token.StartsWith("@T:"))
+            {
+                box.InsertTemplate(token.Substring(3));
             }
             else
             {
-                int at = token.IndexOf('@');
-                string ins = at >= 0 ? token.Remove(at, 1) : token;
-                box.Text = current.Substring(0, start) + ins + current.Substring(start + sel);
-                caret = at >= 0 ? start + at : start + ins.Length;
+                foreach (char c in token)
+                {
+                    box.InsertChar(c);
+                }
             }
-
             box.Focus();
-            try
-            {
-                box.CaretIndex = caret;
-            }
-            catch
-            {
-            }
         }
 
         /// <summary>normalize full-width chars and math symbols.</summary>
