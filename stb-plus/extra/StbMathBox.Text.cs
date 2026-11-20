@@ -13,22 +13,49 @@ namespace InkCanvasPlus
             set { Parse(value); Changed(); }
         }
 
+        private static bool EndsValue(char c)
+        {
+            return char.IsLetterOrDigit(c) || c == ')' || c == '|' || c == '!' || c == '\u03C0' || c == '\u221A';
+        }
+
+        private static bool StartsValue(char c)
+        {
+            return char.IsLetterOrDigit(c) || c == '(' || c == '|' || c == '\u03C0' || c == '\u221A';
+        }
+
+        /// <summary>相邻两个值直接拼会变成 xsqrt(9) 这种未知标识符，补乘号。</summary>
+        private static void AppendPiece(System.Text.StringBuilder sb, string piece)
+        {
+            if (string.IsNullOrEmpty(piece))
+            {
+                return;
+            }
+            if (sb.Length > 0 && EndsValue(sb[sb.Length - 1]) && StartsValue(piece[0]))
+            {
+                sb.Append('*');
+            }
+            sb.Append(piece);
+        }
+
         private static string Serialize(Slot s)
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             foreach (Node n in s.Nodes)
             {
-                if (n.Text != null) { sb.Append(n.Text); continue; }
+                if (n.Text != null) { AppendPiece(sb, n.Text); continue; }
+                string piece;
                 switch (n.Kind)
                 {
-                    case "func": sb.Append(n.Name).Append('(').Append(Serialize(n.Slots[0])).Append(')'); break;
-                    case "logb": sb.Append("log(").Append(Serialize(n.Slots[0])).Append(',').Append(Serialize(n.Slots[1])).Append(')'); break;
-                    case "frac": sb.Append('(').Append(Serialize(n.Slots[0])).Append(")/(").Append(Serialize(n.Slots[1])).Append(')'); break;
-                    case "sqrt": sb.Append("sqrt(").Append(Serialize(n.Slots[0])).Append(')'); break;
-                    case "nroot": sb.Append("root(").Append(Serialize(n.Slots[0])).Append(',').Append(Serialize(n.Slots[1])).Append(')'); break;
-                    case "pow": sb.Append('(').Append(Serialize(n.Slots[0])).Append(")^(").Append(Serialize(n.Slots[1])).Append(')'); break;
-                    case "abs": sb.Append('|').Append(Serialize(n.Slots[0])).Append('|'); break;
+                    case "func": piece = n.Name + "(" + Serialize(n.Slots[0]) + ")"; break;
+                    case "logb": piece = "log(" + Serialize(n.Slots[0]) + "," + Serialize(n.Slots[1]) + ")"; break;
+                    case "frac": piece = "(" + Serialize(n.Slots[0]) + ")/(" + Serialize(n.Slots[1]) + ")"; break;
+                    case "sqrt": piece = "sqrt(" + Serialize(n.Slots[0]) + ")"; break;
+                    case "nroot": piece = "root(" + Serialize(n.Slots[0]) + "," + Serialize(n.Slots[1]) + ")"; break;
+                    case "pow": piece = "(" + Serialize(n.Slots[0]) + ")^(" + Serialize(n.Slots[1]) + ")"; break;
+                    case "abs": piece = "|" + Serialize(n.Slots[0]) + "|"; break;
+                    default: piece = string.Empty; break;
                 }
+                AppendPiece(sb, piece);
             }
             return sb.ToString();
         }

@@ -45,8 +45,6 @@ namespace InkCanvasPlus
 
         public event EventHandler TextChanged;
 
-        public double FontSize { get; set; } = 14;
-
         private static readonly Brush Ink = new SolidColorBrush(Color.FromRgb(0x1F, 0x23, 0x29));
         private static readonly Brush Ghost = new SolidColorBrush(Color.FromRgb(0xB6, 0xBC, 0xC6));
         private static readonly Brush CaretBrush = new SolidColorBrush(Color.FromRgb(0x1F, 0x23, 0x29));
@@ -63,6 +61,8 @@ namespace InkCanvasPlus
             _caret.Off = 0;
             SnapsToDevicePixels = true;
         }
+
+        public double FontSize { get; set; } = 14;
 
         private double Fs { get { return FontSize > 0 ? FontSize : 14; } }
         private double LineH { get { return Fs * 1.4; } }
@@ -314,6 +314,9 @@ namespace InkCanvasPlus
 
         private void Changed()
         {
+            // 内容变高/变宽（插入分数、根号、上下标）必须重新测量，
+            // 否则控件边界仍停在旧宽度，边框只包住前半截，后半截画到框外。
+            InvalidateMeasure();
             InvalidateVisual();
             if (TextChanged != null)
             {
