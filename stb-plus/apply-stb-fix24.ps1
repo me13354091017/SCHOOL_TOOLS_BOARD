@@ -29,3 +29,7 @@ Assert ($txt.Contains('AppendPiece')) 'serialize product'
 Assert ($txt.Contains("sb.Append('*');")) 'serialize star'
 Assert ($txt.Contains('sqrt(')) 'sqrt serialize'
 Write-Host 'OK fix24 verified'
+
+$fix25 = Join-Path $PSScriptRoot 'apply-stb-fix25.ps1'
+Assert (Test-Path -LiteralPath $fix25) 'missing fix25'
+& $fix25 -Root $Root -Version $Version
