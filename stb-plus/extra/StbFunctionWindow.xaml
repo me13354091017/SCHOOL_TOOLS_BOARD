@@ -57,14 +57,43 @@
         </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Column="0" Margin="0,0,14,0">
-            <TextBlock Text="函数类型" FontSize="13" FontWeight="SemiBold" Foreground="#FF1F2329" Margin="0,0,0,10" />
-            <Button x:Name="BtnCat1" Style="{StaticResource CatButton}" Content="一次函数" Tag="y=x" Click="BtnCat_Click" />
-            <Button x:Name="BtnCat2" Style="{StaticResource CatButton}" Content="二次函数" Tag="y=x^2" Click="BtnCat_Click" />
-            <Button x:Name="BtnCat3" Style="{StaticResource CatButton}" Content="幂函数" Tag="y=x^3" Click="BtnCat_Click" />
-            <Button x:Name="BtnCat4" Style="{StaticResource CatButton}" Content="指数函数" Tag="y=2^x" Click="BtnCat_Click" />
-            <Button x:Name="BtnCat5" Style="{StaticResource CatButton}" Content="对数函数" Tag="y=log2(x)" Click="BtnCat_Click" />
-            <Button x:Name="BtnCat6" Style="{StaticResource CatButton}" Content="三角函数" Tag="y=sin(x)" Click="BtnCat_Click" />
-            <TextBlock Text="支持写法：x、pi、e、+ - * /、x² x³、√( ) 括号里继续输入、sin cos tan、ln lg log2、abs、空心圆点 ○；滚轮缩放、按住拖动平移"
+            <Button x:Name="BtnCat1" Style="{StaticResource CatButton}" Tag="y=x" Click="BtnCat_Click">
+                <StackPanel>
+                    <Path Data="M2,17 H42 M22,2 V32 M6,29 L38,5" Stroke="#FF9AA1AB" StrokeThickness="1.2" Width="44" Height="30" Stretch="Uniform" Margin="0,0,0,4" />
+                    <TextBlock Text="一次函数" FontSize="12" Foreground="#FF1F2329" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="BtnCat2" Style="{StaticResource CatButton}" Tag="y=x^2" Click="BtnCat_Click">
+                <StackPanel>
+                    <Path Data="M2,17 H42 M22,2 V32 M8,6 Q22,34 36,6" Stroke="#FF9AA1AB" StrokeThickness="1.2" Width="44" Height="30" Stretch="Uniform" Margin="0,0,0,4" />
+                    <TextBlock Text="二次函数" FontSize="12" Foreground="#FF1F2329" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="BtnCat3" Style="{StaticResource CatButton}" Tag="y=x^-1" Click="BtnCat_Click">
+                <StackPanel>
+                    <Path Data="M2,17 H42 M22,2 V32 M24,3 C26,11 30,15 41,16 M3,18 C14,19 18,23 20,31" Stroke="#FF9AA1AB" StrokeThickness="1.2" Width="44" Height="30" Stretch="Uniform" Margin="0,0,0,4" />
+                    <TextBlock Text="幂函数" FontSize="12" Foreground="#FF1F2329" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="BtnCat4" Style="{StaticResource CatButton}" Tag="y=2^x" Click="BtnCat_Click">
+                <StackPanel>
+                    <Path Data="M2,17 H42 M22,2 V32 M3,26 C18,24 26,16 37,4" Stroke="#FF9AA1AB" StrokeThickness="1.2" Width="44" Height="30" Stretch="Uniform" Margin="0,0,0,4" />
+                    <TextBlock Text="指数函数" FontSize="12" Foreground="#FF1F2329" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="BtnCat5" Style="{StaticResource CatButton}" Tag="y=log2(x)" Click="BtnCat_Click">
+                <StackPanel>
+                    <Path Data="M2,17 H42 M22,2 V32 M5,31 C9,19 17,13 41,9" Stroke="#FF9AA1AB" StrokeThickness="1.2" Width="44" Height="30" Stretch="Uniform" Margin="0,0,0,4" />
+                    <TextBlock Text="对数函数" FontSize="12" Foreground="#FF1F2329" />
+                </StackPanel>
+            </Button>
+            <Button x:Name="BtnCat6" Style="{StaticResource CatButton}" Tag="y=sin(x)" Click="BtnCat_Click">
+                <StackPanel>
+                    <Path Data="M2,17 H42 M22,2 V32 M3,17 C9,3 15,3 21,17 S33,31 41,17" Stroke="#FF9AA1AB" StrokeThickness="1.2" Width="44" Height="30" Stretch="Uniform" Margin="0,0,0,4" />
+                    <TextBlock Text="三角函数" FontSize="12" Foreground="#FF1F2329" />
+                </StackPanel>
+            </Button>
+            <TextBlock Text="左侧快捷选择或直接输入"
                        FontSize="10" Foreground="#FF8A909A" TextWrapping="Wrap" Margin="2,6,0,0" />
         </StackPanel>
 
@@ -72,7 +101,7 @@
             <Border Background="#FFFFFFFF" BorderBrush="#FFE3E6EC" BorderThickness="1" CornerRadius="10">
                 <local:StbFuncPlot x:Name="Plot" Margin="10" MinWidth="360" MinHeight="300" />
             </Border>
-            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,14,0">
+            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,14,14">
                 <Button x:Name="BtnZoomIn" Content="＋" Width="32" Height="30" FontSize="16" Margin="0,0,0,6"
                         ToolTip="放大（也可滚轮向上）" Click="StbZoomIn_Click" />
                 <Button x:Name="BtnZoomOut" Content="－" Width="32" Height="30" FontSize="16" Margin="0,0,0,6"
@@ -84,36 +113,30 @@
 
         <Grid Grid.Column="2" Margin="14,0,0,0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Text="表达式" FontSize="13" FontWeight="SemiBold" Foreground="#FF1F2329" Margin="0,0,0,8" />
-
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
                 <StackPanel x:Name="PanelExpr" />
             </ScrollViewer>
 
-            <StackPanel Grid.Row="2" Margin="0,10,0,0">
+            <StackPanel Grid.Row="1" Margin="0,10,0,0">
                 <Button x:Name="BtnAddExpr" Style="{StaticResource FlatButton}" HorizontalAlignment="Left"
-                        Content="+ 增加表达式" Click="BtnAddExpr_Click" Margin="0,0,0,10" />
-                <Grid Margin="0,0,0,6">
+                        Content="＋ 增加表达式" Click="BtnAddExpr_Click" Margin="0,0,0,8" />
+                <TextBlock x:Name="TextExprCount" FontSize="11" Foreground="#FF8A909A" Margin="2,0,0,6" />
+                <Border x:Name="PreviewHost" Background="#FFF8FAFC" BorderBrush="#FFE3E6EC" BorderThickness="1"
+                        CornerRadius="8" Padding="10,6,10,6" Margin="0,0,0,8" MinHeight="34" />
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock x:Name="TextExprCount" Grid.Column="0" FontSize="11" Foreground="#FF8A909A" VerticalAlignment="Center" />
-                    <Button x:Name="BtnToggleKeypad" Grid.Column="1" Content="⌨ 快捷输入" FontSize="11" Padding="8,3"
-                            Background="#FFFFFFFF" BorderBrush="#FFE3E6EC" BorderThickness="1" Cursor="Hand"
-                            Click="BtnToggleKeypad_Click" />
+                    <TextBlock x:Name="TextHint" Grid.Column="0" FontSize="11" Foreground="#FFD93025" TextWrapping="Wrap"
+                               VerticalAlignment="Center" Margin="2,0,8,0" Visibility="Collapsed" />
+                    <Button x:Name="BtnInsert" Grid.Column="1" Content="插入函数" Width="120" Height="38" Background="#FF1F8F5F" Foreground="White"
+                            BorderThickness="0" Cursor="Hand" Click="BtnInsert_Click" />
                 </Grid>
-                <Border x:Name="PreviewHost" Background="#FFF8FAFC" BorderBrush="#FFE3E6EC" BorderThickness="1"
-                        CornerRadius="8" Padding="10,6,10,6" Margin="0,0,0,8" MinHeight="34" />
-                <TextBlock x:Name="TextHint" FontSize="11" Foreground="#FFD93025" TextWrapping="Wrap"
-                           Margin="2,0,0,8" Visibility="Collapsed" />
-                <Button x:Name="BtnInsert" Content="插入函数" Height="38" Background="#FF1F8F5F" Foreground="White"
-                        BorderThickness="0" Cursor="Hand" Click="BtnInsert_Click" />
             </StackPanel>
         </Grid>
     </Grid>
