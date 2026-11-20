@@ -45,6 +45,8 @@ namespace InkCanvasPlus
 
         public event EventHandler TextChanged;
 
+        public double FontSize { get; set; } = 14;
+
         private static readonly Brush Ink = new SolidColorBrush(Color.FromRgb(0x1F, 0x23, 0x29));
         private static readonly Brush Ghost = new SolidColorBrush(Color.FromRgb(0xB6, 0xBC, 0xC6));
         private static readonly Brush CaretBrush = new SolidColorBrush(Color.FromRgb(0x1F, 0x23, 0x29));
@@ -68,7 +70,7 @@ namespace InkCanvasPlus
         private FormattedText Ft(string text, double size)
         {
             return new FormattedText(text == null ? string.Empty : text, CultureInfo.InvariantCulture,
-                FlowDirection.LeftToRight, new Typeface(FontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                FlowDirection.LeftToRight, new Typeface("Microsoft YaHei UI"),
                 size, Ink);
         }
 
@@ -187,7 +189,7 @@ namespace InkCanvasPlus
             else if (s.Owner != null)
             {
                 Slot p = s.Parent;
-                int oi = s.Owner.Index;
+                int oi = s.Parent.Nodes.IndexOf(s.Owner);
                 p.Nodes.Remove(s.Owner);
                 _caret.Slot = p;
                 _caret.Idx = oi;
@@ -218,7 +220,7 @@ namespace InkCanvasPlus
             else if (s.Owner != null)
             {
                 _caret.Slot = s.Parent;
-                _caret.Idx = s.Owner.Index + 1;
+                _caret.Idx = s.Parent.Nodes.IndexOf(s.Owner) + 1;
                 _caret.Off = 0;
             }
             InvalidateVisual();
@@ -251,7 +253,7 @@ namespace InkCanvasPlus
             else if (s.Owner != null)
             {
                 _caret.Slot = s.Parent;
-                _caret.Idx = s.Owner.Index;
+                _caret.Idx = s.Parent.Nodes.IndexOf(s.Owner);
                 _caret.Off = 0;
             }
             InvalidateVisual();
