@@ -2,30 +2,70 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 
 namespace InkCanvasPlus
 {
+    /// <summary>
+    /// 希沃白板5 同款快捷输入键盘（布局对照 EasiNote 5.2.4 实物）：
+    /// 左米色数字区 7 8 9 + / 4 5 6 - / 1 2 3 × / 0(双宽) . ÷ ；
+    /// 右白色函数区 sin cos tan x / e π log2 ln / 幂 根 平方 / 绝对值 括号 分数，
+    /// 红色退格、绿色回车（跨两行）、左右移动光标键。
+    /// </summary>
     public partial class StbFunctionWindow
     {
         private Popup _keypadPopup;
 
-        private Button MakeKey(string label, double w, double h, Color bg, Color fg)
+        private static readonly Color CreamBg = Color.FromRgb(0xF7, 0xEC, 0xDF);
+        private static readonly Color CreamLine = Color.FromRgb(0xEF, 0xE0, 0xCC);
+        private static readonly Color WhiteLine = Color.FromRgb(0xEC, 0xEE, 0xF1);
+        private static readonly Color KeyFg = Color.FromRgb(0x4B, 0x4F, 0x55);
+
+        private Button MakeCell(object content, string token, Color bg, Color line, Color fg, double w, double h)
         {
-            return new Button
+            Button b = new Button
             {
-                Content = label,
+                Content = content,
                 Width = w,
                 Height = h,
-                Margin = new Thickness(0, 0, 5, 5),
-                FontSize = 13,
+                FontSize = 15,
                 Background = new SolidColorBrush(bg),
                 Foreground = new SolidColorBrush(fg),
-                BorderBrush = new SolidColorBrush(Color.FromRgb(0xE3, 0xE6, 0xEC)),
-                BorderThickness = new Thickness(1),
+                BorderBrush = new SolidColorBrush(line),
+                BorderThickness = new Thickness(0, 0, 1, 1),
                 Cursor = System.Windows.Input.Cursors.Hand
             };
+            b.Click += (a, c) => StbInsertToken(token);
+            return b;
+        }
+
+        private static TextBlock Sup(string main, string sup)
+        {
+            TextBlock t = new TextBlock { FontSize = 15, Foreground = new SolidColorBrush(KeyFg) };
+            t.Inlines.Add(new Run(main));
+            Run r = new Run(sup) { FontSize = 10, BaselineAlignment = BaselineAlignment.Superscript };
+            t.Inlines.Add(r);
+            return t;
+        }
+
+        private static TextBlock SubLog()
+        {
+            TextBlock t = new TextBlock { FontSize = 15, Foreground = new SolidColorBrush(KeyFg) };
+            t.Inlines.Add(new Run("log"));
+            t.Inlines.Add(new Run("□") { FontSize = 9, BaselineAlignment = BaselineAlignment.Subscript });
+            t.Inlines.Add(new Run("□") { FontSize = 11 });
+            return t;
+        }
+
+        private static StackPanel Frac()
+        {
+            StackPanel p = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+            p.Children.Add(new TextBlock { Text = "□", FontSize = 10, Foreground = new SolidColorBrush(KeyFg), HorizontalAlignment = HorizontalAlignment.Center });
+            p.Children.Add(new Border { Height = 1, Width = 16, Background = new SolidColorBrush(KeyFg), Margin = new Thickness(0, 1, 0, 1) });
+            p.Children.Add(new TextBlock { Text = "□", FontSize = 10, Foreground = new SolidColorBrush(KeyFg), HorizontalAlignment = HorizontalAlignment.Center });
+            return p;
         }
 
         private void BuildKeypad()
@@ -35,109 +75,125 @@ namespace InkCanvasPlus
                 Background = Brushes.White,
                 BorderBrush = new SolidColorBrush(Color.FromRgb(0xD8, 0xDD, 0xE5)),
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(10),
-                Padding = new Thickness(10, 8, 10, 10)
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(0)
             };
             shell.Effect = new DropShadowEffect { BlurRadius = 22, ShadowDepth = 3, Opacity = 0.22 };
 
-            StackPanel col = new StackPanel { Width = 486 };
+            StackPanel hor = new StackPanel { Orientation = Orientation.Horizontal };
 
-            Grid head = new Grid { Margin = new Thickness(0, 0, 0, 8) };
-            head.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            head.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            TextBlock title = new TextBlock
+            // ---- 左：米色数字区 ----
+            Grid num = new Grid();
+            for (int i = 0; i < 4; i++)
             {
-                Text = "\u5FEB\u6377\u8F93\u5165",
-                FontSize = 12,
-                FontWeight = FontWeights.SemiBold,
-                Foreground = new SolidColorBrush(Color.FromRgb(0x1F, 0x23, 0x29)),
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(title, 0);
-            head.Children.Add(title);
-
-            Button close = MakeKey("\u2715", 26, 22, Color.FromRgb(0xD9, 0x30, 0x25), Colors.White);
-            close.Margin = new Thickness(0);
-            close.Click += (a, b) => StbInsertToken("@CLOSE");
-            Grid.SetColumn(close, 1);
-            head.Children.Add(close);
-            col.Children.Add(head);
-
-            WrapPanel keys = new WrapPanel { Width = 486 };
-
-            string[][] list = new string[][]
+                num.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(58) });
+                num.RowDefinitions.Add(new RowDefinition { Height = new GridLength(52) });
+            }
+            string[][] nk = new string[][]
             {
                 new string[] { "7", "7" }, new string[] { "8", "8" }, new string[] { "9", "9" }, new string[] { "+", "+" },
-                new string[] { "sin", "sin(" }, new string[] { "cos", "cos(" }, new string[] { "tan", "tan(" }, new string[] { "x", "x" },
-                new string[] { "4", "4" }, new string[] { "5", "5" }, new string[] { "6", "6" }, new string[] { "-", "-" },
-                new string[] { "e", "e" }, new string[] { "pi", "pi" }, new string[] { "log2", "log2(" }, new string[] { "ln", "ln(" },
-                new string[] { "1", "1" }, new string[] { "2", "2" }, new string[] { "3", "3" }, new string[] { "*", "*" },
-                new string[] { "x2", "^2" }, new string[] { "x3", "^3" }, new string[] { "sqrt", "sqrt(" }, new string[] { "abs", "abs(" },
-                new string[] { "0", "0" }, new string[] { ".", "." }, new string[] { "/", "/" }, new string[] { "(", "(" },
-                new string[] { ")", ")" }, new string[] { "DEL", "@BACK" }, new string[] { "CLR", "@CLS" }, new string[] { "OK", "@RUN" }
+                new string[] { "4", "4" }, new string[] { "5", "5" }, new string[] { "6", "6" }, new string[] { "−", "-" },
+                new string[] { "1", "1" }, new string[] { "2", "2" }, new string[] { "3", "3" }, new string[] { "×", "*" },
+                new string[] { "0", "0" }, new string[] { ".", "." }, new string[] { "÷", "/" }
             };
-
-            foreach (string[] k in list)
+            int[] npos = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15 };
+            for (int i = 0; i < nk.Length; i++)
             {
-                string token = k[1];
-                Color bg = Color.FromRgb(0xF3, 0xF5, 0xF8);
-                Color fg = Color.FromRgb(0x1F, 0x23, 0x29);
-                bool digit = token.Length == 1 && (char.IsDigit(token[0]) || token == "." || token == "+" || token == "-" || token == "*" || token == "/");
-                if (digit || token == "@BACK" || token == "@CLS")
+                Button b = MakeCell(nk[i][0], nk[i][1], CreamBg, CreamLine, KeyFg, 58, 52);
+                int cell = npos[i];
+                Grid.SetRow(b, cell / 4);
+                Grid.SetColumn(b, cell % 4);
+                if (i == 12)
                 {
-                    bg = Colors.White;
+                    Grid.SetColumnSpan(b, 2);
+                    b.Width = 116;
                 }
-                else if (token == "@RUN")
-                {
-                    bg = Color.FromRgb(0x1F, 0x8F, 0x5F);
-                    fg = Colors.White;
-                }
-                Button b = MakeKey(k[0], 56, 34, bg, fg);
-                b.Click += (a, c) => StbInsertToken(token);
-                keys.Children.Add(b);
+                num.Children.Add(b);
+            }
+            hor.Children.Add(num);
+
+            // ---- 右：白色函数区 ----
+            Grid fn = new Grid();
+            double[] cw = new double[] { 58, 58, 66, 58, 30, 32 };
+            for (int i = 0; i < 6; i++)
+            {
+                fn.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(cw[i]) });
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                fn.RowDefinitions.Add(new RowDefinition { Height = new GridLength(52) });
             }
 
-            col.Children.Add(keys);
-            shell.Child = col;
+            Action<object, string, int, int, int, int> put = (content, token, r, c, rs, cs) =>
+            {
+                Button b = MakeCell(content, token, Colors.White, WhiteLine, KeyFg, cw[c], 52);
+                Grid.SetRow(b, r);
+                Grid.SetColumn(b, c);
+                if (rs > 1) { Grid.SetRowSpan(b, rs); b.Height = 52 * rs; }
+                if (cs > 1) { Grid.SetColumnSpan(b, cs); }
+                fn.Children.Add(b);
+            };
+
+            put("sin", "sin(@)", 0, 0, 1, 1);
+            put("cos", "cos(@)", 0, 1, 1, 1);
+            put("tan", "tan(@)", 0, 2, 1, 1);
+            put(new TextBlock { Text = "x", FontStyle = FontStyles.Italic, FontSize = 15, Foreground = new SolidColorBrush(KeyFg) }, "x", 0, 3, 1, 1);
+            Button back = MakeCell("⌫", "@BACK", Colors.White, WhiteLine, Color.FromRgb(0xD9, 0x30, 0x25), 62, 52);
+            Grid.SetRow(back, 0); Grid.SetColumn(back, 4); Grid.SetColumnSpan(back, 2);
+            fn.Children.Add(back);
+
+            put("e", "e", 1, 0, 1, 1);
+            put("π", "π", 1, 1, 1, 1);
+            put(SubLog(), "log2(@)", 1, 2, 1, 1);
+            put("ln□", "ln(@)", 1, 3, 1, 1);
+            Button enter = MakeCell("↵", "@RUN", Colors.White, WhiteLine, Color.FromRgb(0x1F, 0x8F, 0x5F), 62, 104);
+            enter.FontSize = 20;
+            Grid.SetRow(enter, 1); Grid.SetColumn(enter, 4); Grid.SetColumnSpan(enter, 2); Grid.SetRowSpan(enter, 2);
+            fn.Children.Add(enter);
+
+            put(Sup("□", "x"), "^x", 2, 0, 1, 1);
+            put("ⁿ√□", "root(@,)", 2, 1, 1, 1);
+            put("√□", "√(@)", 2, 2, 1, 1);
+            put(Sup("x", "□"), "^", 2, 3, 1, 1);
+
+            put("|□|", "|@|", 3, 0, 1, 1);
+            put("(", "(", 3, 1, 1, 1);
+            put(")", ")", 3, 2, 1, 1);
+            put(Frac(), "(@)/()", 3, 3, 1, 1);
+            put("←", "@LEFT", 3, 4, 1, 1);
+            put("→", "@RIGHT", 3, 5, 1, 1);
+
+            hor.Children.Add(fn);
+            shell.Child = hor;
 
             _keypadPopup = new Popup
             {
-                StaysOpen = true,
+                StaysOpen = false,
                 AllowsTransparency = true,
                 PopupAnimation = PopupAnimation.Fade,
-                PlacementTarget = BtnToggleKeypad,
-                Placement = PlacementMode.Top,
-                VerticalOffset = -4,
+                Placement = PlacementMode.Bottom,
                 Child = shell
             };
         }
 
-        private void BtnToggleKeypad_Click(object sender, RoutedEventArgs e)
+        /// <summary>行内绿色键盘图标：把键盘浮层锚到该行输入框下方（希沃式）。</summary>
+        internal void StbOpenKeypadFor(TextBox box, Button anchor)
         {
+            _activeBox = box;
             if (_keypadPopup == null)
             {
                 BuildKeypad();
             }
-            _keypadPopup.PlacementTarget = BtnToggleKeypad;
-            _keypadPopup.IsOpen = !_keypadPopup.IsOpen;
-            if (_keypadPopup.IsOpen && _activeBox == null && _rows.Count > 0)
-            {
-                _activeBox = _rows[_rows.Count - 1].Box;
-            }
+            _keypadPopup.PlacementTarget = anchor;
+            _keypadPopup.HorizontalOffset = -420;
+            _keypadPopup.VerticalOffset = 6;
+            _keypadPopup.IsOpen = true;
+            box.Focus();
         }
 
-        /// <summary>insert token at caret of current expression box.</summary>
+        /// <summary>把符号/函数片段插到当前表达式光标处；@ 表示插入后光标停留位置。</summary>
         private void StbInsertToken(string token)
         {
-            if (token == "@CLOSE")
-            {
-                if (_keypadPopup != null)
-                {
-                    _keypadPopup.IsOpen = false;
-                }
-                return;
-            }
             if (token == "@RUN")
             {
                 RefreshAll();
@@ -152,14 +208,6 @@ namespace InkCanvasPlus
             }
             if (box == null)
             {
-                return;
-            }
-
-            if (token == "@CLS")
-            {
-                box.Text = string.Empty;
-                box.Focus();
-                box.CaretIndex = 0;
                 return;
             }
 
@@ -180,14 +228,30 @@ namespace InkCanvasPlus
                     caret = start - 1;
                 }
             }
+            else if (token == "@LEFT")
+            {
+                caret = Math.Max(0, start - 1);
+            }
+            else if (token == "@RIGHT")
+            {
+                caret = Math.Min(current.Length, start + 1);
+            }
             else
             {
-                box.Text = current.Substring(0, start) + token + current.Substring(start + sel);
-                caret = start + token.Length;
+                int at = token.IndexOf('@');
+                string ins = at >= 0 ? token.Remove(at, 1) : token;
+                box.Text = current.Substring(0, start) + ins + current.Substring(start + sel);
+                caret = at >= 0 ? start + at : start + ins.Length;
             }
 
             box.Focus();
-            box.CaretIndex = caret;
+            try
+            {
+                box.CaretIndex = caret;
+            }
+            catch
+            {
+            }
         }
 
         /// <summary>normalize full-width chars and math symbols.</summary>
@@ -200,11 +264,11 @@ namespace InkCanvasPlus
             System.Text.StringBuilder sb = new System.Text.StringBuilder(text.Length + 8);
             foreach (char ch in text)
             {
-                if (ch >= '\uFF01' && ch <= '\uFF5E')
+                if (ch >= '！' && ch <= '～')
                 {
                     sb.Append((char)(ch - 0xFEE0));
                 }
-                else if (ch == '\u3000')
+                else if (ch == '　')
                 {
                     sb.Append(' ');
                 }
@@ -214,10 +278,10 @@ namespace InkCanvasPlus
                 }
             }
             string s = sb.ToString();
-            s = s.Replace("\u00B2", "^2").Replace("\u00B3", "^3")
-                 .Replace("\u00D7", "*").Replace("\u00F7", "/")
-                 .Replace("\u2212", "-").Replace("\u2013", "-")
-                 .Replace("\u03C0", "pi")
+            s = s.Replace("²", "^2").Replace("³", "^3")
+                 .Replace("×", "*").Replace("÷", "/")
+                 .Replace("−", "-").Replace("–", "-")
+                 .Replace("π", "pi")
                  .Replace("{", "(").Replace("}", ")");
             return s;
         }
