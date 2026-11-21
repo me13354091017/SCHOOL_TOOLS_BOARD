@@ -1,6 +1,5 @@
 # apply-stb-fix39.ps1
-# 1.0.1.46：真机发现放映窗刚出现时头一两次 Esc 会被 WPS 吞掉（装载动画 / 首帧未就绪），
-#   改成最多 8 次、每次间隔 220ms，窗口消失就立即停；仍不关再强制关窗。
+# 1.0.1.46：放映窗刚出现时头一两次 Esc 会被 WPS 吞掉，改成最多 8 次、每次间隔 220ms。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -45,3 +44,7 @@ WriteText $pe $t
 $t2 = ReadText $pe
 Assert ($t2.Contains('stbEscTry < 8')) 'loop assert'
 Write-Host 'OK fix39 verified'
+
+$fix40 = Join-Path $PSScriptRoot 'apply-stb-fix40.ps1'
+Assert (Test-Path -LiteralPath $fix40) 'missing fix40'
+& $fix40 -Root $Root -Version $Version
