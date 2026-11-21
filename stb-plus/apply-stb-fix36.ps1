@@ -1,7 +1,6 @@
 # apply-stb-fix36.ps1
 # 1.0.1.43：修「轻量批注下点结束放映没反应」。
-#   1.0.1.42 虽已改成 PostMessage，但 lParam 传 0，Qt 的 WPS 放映窗直接忽略；
-#   真机验证：先把放映窗设为前台，再用带扫描码的 lParam（Esc=0x00010001 / 抬起 0xC0010001）PostMessage，窗口立刻关闭。
+#   给 Esc 补上扫描码 lParam（lParam=0 会被 Qt 放映窗直接丢掉）。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -29,7 +28,7 @@ $old = @'
 $new = @'
                 _stbPptLastKeyHwnd = h;
                 LogHelper.WriteLogToFile("STB paging send vk=" + vk + " hwnd=" + h, LogHelper.LogType.Event);
-                // 1.0.1.43：WPS 的 Qt 放映窗只认带扫描码的 lParam；lParam=0 会被直接丢掉（结束放映点了没反应的真因）
+                // 1.0.1.43：WPS 的 Qt 放映窗只认带扫描码的 lParam；lParam=0 会被直接丢掉
                 StbSetForegroundWindow(h);
                 System.Threading.Thread.Sleep(80);
                 int stbScan = vk == 0x1B ? 0x01 : (vk == 0x22 ? 0x51 : (vk == 0x21 ? 0x49 : 0));
@@ -45,3 +44,7 @@ $t2 = ReadText $pp
 Assert ($t2.Contains('stbLpDown')) 'lparam assert'
 Assert ($t2.Contains('StbSetForegroundWindow(h);')) 'foreground assert'
 Write-Host 'OK fix36 verified'
+
+$fix37 = Join-Path $PSScriptRoot 'apply-stb-fix37.ps1'
+Assert (Test-Path -LiteralPath $fix37) 'missing fix37'
+& $fix37 -Root $Root -Version $Version
