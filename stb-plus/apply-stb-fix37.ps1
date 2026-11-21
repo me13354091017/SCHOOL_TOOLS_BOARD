@@ -1,6 +1,6 @@
 # apply-stb-fix37.ps1
 # 1.0.1.44：轻量批注结束放映的兜底。真机实测：STB 进程内 SetForegroundWindow 拿不到前台权，
-#   Qt 放映窗仍会忽略带 lParam 的 Esc；而直接 PostMessage WM_CLOSE 到放映窗 100% 关闭、无需前台。
+#   Qt 放映窗仍会忽略带 lParam 的 Esc；改为向放映窗发 WM_CLOSE。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -27,7 +27,7 @@ $old = @'
 $new = @'
         /// <summary>
         /// 1.0.1.44：结束放映的兜底。WPS 的 Qt 放映窗在 STB 进程里抢不到前台时不会响应 Esc，
-        /// 但 WM_CLOSE 直接投给放映窗即可关闭（真机验证 100% 生效，不需要前台）。
+        /// 改为直接向放映窗发 WM_CLOSE。
         /// </summary>
         private void StbPptForceCloseShow()
         {
@@ -83,3 +83,7 @@ Assert ($p2.Contains('StbPptForceCloseShow')) 'force close assert'
 $e2 = ReadText $pe
 Assert ($e2.Contains('StbPptForceCloseShow();')) 'esc call assert'
 Write-Host 'OK fix37 verified'
+
+$fix38 = Join-Path $PSScriptRoot 'apply-stb-fix38.ps1'
+Assert (Test-Path -LiteralPath $fix38) 'missing fix38'
+& $fix38 -Root $Root -Version $Version
