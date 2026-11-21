@@ -3,7 +3,7 @@
 # 1) 数据目录识别加硬条件：只有「程序目录名以 app- 开头」且上一级存在 data 时，才把 RootPath 指到上一级 data，
 #    避免免安装版放在 D:\Tools 这类目录时，碰巧存在的 data 目录把设置、日志带走；
 # 2) 升级安装时清理根目录上一版遗留的程序文件（dll / exe / config / pdb / zh / Resources 等），
-#    只保留 Settings.json、Names.txt 这类数据，[Run] 里再迁进 data\，根目录保持只有启动器 + app-* + data。
+#    只保留 Settings.json、Names.txt、user.config 系的数据，包末再迁进 data\，根目录保持只有启动器 + app-* + data。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -78,3 +78,7 @@ Write-Host 'OK fix28 verified'
 $fix29 = Join-Path $PSScriptRoot 'apply-stb-fix29.ps1'
 Assert (Test-Path -LiteralPath $fix29) 'missing fix29'
 & $fix29 -Root $Root -Version $Version
+
+$fix31 = Join-Path $PSScriptRoot 'apply-stb-fix31.ps1'
+Assert (Test-Path -LiteralPath $fix31) 'missing fix31'
+& $fix31 -Root $Root -Version $Version
