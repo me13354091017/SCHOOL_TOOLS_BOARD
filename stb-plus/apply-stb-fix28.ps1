@@ -82,3 +82,7 @@ Assert (Test-Path -LiteralPath $fix29) 'missing fix29'
 $fix31 = Join-Path $PSScriptRoot 'apply-stb-fix31.ps1'
 Assert (Test-Path -LiteralPath $fix31) 'missing fix31'
 & $fix31 -Root $Root -Version $Version
+
+$fix32 = Join-Path $PSScriptRoot 'apply-stb-fix32.ps1'
+Assert (Test-Path -LiteralPath $fix32) 'missing fix32'
+& $fix32 -Root $Root -Version $Version
