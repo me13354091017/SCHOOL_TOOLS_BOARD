@@ -1,21 +1,17 @@
-# SchoolToolsBoard 1.0.1.37
+# SchoolToolsBoard 1.0.1.38
 
-PPT 放映识别换成 GitHub 上验证过的实现。
+PPT 的「功能」全部回到 Ink Canvas Plus 原版，只保留新的放映识别。
 
-## 识别：三重判据（QTimer 的 is_ppt_slideshow_active + RimePPT 的放映窗观察）
-- 类名层：`screenClass`（PowerPoint）、`paneClassDC`、`MSO_SubWindow_Class`、`kslideshow` / `wps_slideshow` / `wpp_slideshow_class`（WPS 各版本）
-- 进程层：窗口属于 `POWERPNT` / `PPTVW` / `WPP` / `WPS`，且标题带「幻灯片放映 / Slide Show」，或者是真全屏
-- 全屏层：真全屏 = 窗口矩形与所在显示器矩形相差 ≤6px，**且排除最大化窗口**（编辑窗最大化不再算放映）
-- 进程名读不到（权限受限）时，要求「标题带放映关键词 + 真全屏」
+## 回到原版（与上游逐字一致）
+- 结束放映：`BtnPPTSlideShowEnd_Click` 恢复上游原文，去掉 5 秒静默期与 Esc 兜底，只调 `pptApplication.SlideShowWindows[1].View.Exit()`
+- 上一页 / 下一页：去掉 1.0.1.34 的 `pptApplication == null || StbPptComShowCount() < 1` 预检守卫
+- 放映结束：去掉 1.0.1.36 塞进 `PptApplication_SlideShowEnd` 的 `_stbPptLight = false` + `StbPptExitLight()`
+- 常驻探测：去掉 `StbPptInUserEndHold()` 判断，识别不再受「结束放映静默期」影响
 
-## 反应速度
-- 常驻检查 0.8 秒一拍 → 0.5 秒一拍；按 F5 基本一秒内进批注
+## 保留（属于识别）
+- `MainWindow.PptDetect.cs`：三重判据（放映专用类名 / 放映进程 + 标题 / 真全屏且非最大化）
+- 常驻检查 0.5 秒一拍；COM 拿不到时轻量批注；进程消失后复位并重建 COM
 
-## 进入批注
-- 有 COM 放映窗时走上游 `PptApplication_SlideShowBegin`（原生工具栏 / 翻页 / 结束放映）
-- 拿不到 COM（WPS / 权限隔离 / 保护视图）时退化为轻量批注
-
-## 异常复位（沿用 1.0.1.36）
-- 进程全部退出（任务管理器结束 / 崩溃 / 先关文稿再退出）→ 收回批注界面、清 COM、重启上游定时器
-- 点「结束放映」保留 5 秒静默期
+## 取舍
+- 结束放映按钮回到原版后依赖 PowerPoint 的 COM：WPS 轻量批注里点它不会结束放映，按 Esc 即可，识别会在放映窗消失后自动退出批注
 
