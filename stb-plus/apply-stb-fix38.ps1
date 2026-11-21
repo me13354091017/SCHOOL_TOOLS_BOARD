@@ -1,6 +1,5 @@
 # apply-stb-fix38.ps1
-# 1.0.1.45：真机发现 PostMessage(WM_CLOSE) 会被 WPS 的 Qt 放映窗忽略，而 SendMessage 同步投递能关闭；
-#   改为 SendMessageTimeout(500ms)，避免 WPS 卡死时拖住 STB 的 UI 线程。
+# 1.0.1.45：真机发现 PostMessage(WM_CLOSE) 会被 WPS 的 Qt 放映窗忽略，改为 SendMessageTimeout 同步投递作为最后兜底。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -38,7 +37,6 @@ $old = @'
 '@
 $new = @'
                 LogHelper.WriteLogToFile("STB force close show hwnd=" + h, LogHelper.LogType.Event);
-                // 1.0.1.45：PostMessage(WM_CLOSE) 会被 Qt 放映窗忽略，SendMessage 同步投递才关得掉
                 IntPtr stbR;
                 StbSendMessageTimeout(h, 0x0010, IntPtr.Zero, IntPtr.Zero, 0x0002, 500, out stbR);
 '@
@@ -48,3 +46,7 @@ WriteText $pp $t
 $t2 = ReadText $pp
 Assert ($t2.Contains('StbSendMessageTimeout(h, 0x0010')) 'send close assert'
 Write-Host 'OK fix38 verified'
+
+$fix39 = Join-Path $PSScriptRoot 'apply-stb-fix39.ps1'
+Assert (Test-Path -LiteralPath $fix39) 'missing fix39'
+& $fix39 -Root $Root -Version $Version

@@ -1,11 +1,10 @@
-SchoolToolsBoard（STB）课堂白板 1.0.1.45
+SchoolToolsBoard（STB）课堂白板 1.0.1.46
 底座：Ink Canvas Plus（GPL-3.0）· 发行者：周之尧
 
-【本版：结束放映（轻量批注真机修复）】
+【本版：结束放映（继续真机修）】
 
-· 轻量批注（WPS 无 COM）下点“结束放映”没反应：真机实测 PostMessage 投 WM_CLOSE 也会被 Qt 放映窗忽略；
-  改为 SendMessageTimeout 同步投递，真机 100% 关闭放映窗，且不会拖住界面
-· 保留 Esc 带扫描码的优雅退出，失败再强制关窗
+· 轻量批注下点“结束放映”：放映窗刚出现时前几次 Esc 会被 WPS 吞掉，改成最多重试 8 次、窗口消失立即停；
+  仍不关再用 SendMessage 同步关闭兜底
 
 【上一版】
 · 结束放映按钮无 COM 时不再只依赖 View.Exit，改为 Esc + 还原界面
