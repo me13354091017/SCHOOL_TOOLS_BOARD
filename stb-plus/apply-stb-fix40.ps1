@@ -1,7 +1,6 @@
 # apply-stb-fix40.ps1
 # 1.0.1.47：fix39 的重试循环用 StbPptFindShowHwndAny() 判断“窗口已消失”，
-#   但该方法在这台 WPS 上会误报 0（窗口明明还在），导致只发一次 Esc 就 return。
-#   改成用检测到的 _stbPptShowHwnd 句柄判断可见性。
+#   但该方法在这台 WPS 上会误报 0，导致只发一次 Esc 就 return；改成用 _stbPptShowHwnd 判断。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -42,3 +41,7 @@ WriteText $pe $t
 $t2 = ReadText $pe
 Assert ($t2.Contains('IsWindowVisible(_stbPptShowHwnd)')) 'handle visibility assert'
 Write-Host 'OK fix40 verified'
+
+$fix41 = Join-Path $PSScriptRoot 'apply-stb-fix41.ps1'
+Assert (Test-Path -LiteralPath $fix41) 'missing fix41'
+& $fix41 -Root $Root -Version $Version
