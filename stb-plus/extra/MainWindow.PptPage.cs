@@ -87,6 +87,7 @@ namespace InkCanvasPlus
                     inkCanvas.Strokes.Add(new StrokeCollection(new MemoryStream(data)));
                 }
                 PptNavigationTextBlock.Text = "第 " + page + " 页";
+                LogHelper.WriteLogToFile("STB paging load page=" + page, LogHelper.LogType.Event);
             }
             catch
             {
@@ -110,6 +111,7 @@ namespace InkCanvasPlus
             }
             StbPptLightSavePage();
             int target = _stbPptLightPage + delta;
+            LogHelper.WriteLogToFile("STB paging turn: delta=" + delta + " page=" + _stbPptLightPage + " target=" + target + " light=" + _stbPptLight + " com=" + StbPptComReady() + " hwnd=" + _stbPptShowHwnd, LogHelper.LogType.Event);
             if (target < 1)
             {
                 target = 1;
@@ -142,6 +144,7 @@ namespace InkCanvasPlus
                     return;
                 }
                 _stbPptLastKeyHwnd = h;
+                LogHelper.WriteLogToFile("STB paging send vk=" + vk + " hwnd=" + h, LogHelper.LogType.Event);
                 StbPostMessage(h, STB_WM_KEYDOWN, new IntPtr(vk), IntPtr.Zero);
                 StbPostMessage(h, STB_WM_KEYUP, new IntPtr(vk), IntPtr.Zero);
             }
