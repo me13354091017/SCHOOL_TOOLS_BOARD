@@ -2,7 +2,7 @@
 # 1.0.1.42：修「无法结束放映」。
 #   原版 End 按钮只调 pptApplication.SlideShowWindows[1].View.Exit()，没有 COM（WPS 轻量批注 / COM 断开）时
 #   异常被 catch 吞掉，表现就是点了没反应。现在：无 COM 直接给放映窗投 Esc 并手动还原界面；有 COM 仍走 View.Exit，
-#   失败时同样降级成 Esc + 还原。Esc 也从「抢前台 + keybd_event」改成 PostMessage（实测只有它能让 WPS 放映窗响应）。
+#   失败时同样降级成 Esc + 还原。Esc 也从「抢前台 + keybd_event」改成 PostMessage。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -94,3 +94,7 @@ $s2 = ReadText $ps
 Assert ($s2.Contains('if (!StbPptComReady())')) 'end guard assert'
 Assert ($s2.Contains('_stbPptLight = false;')) 'end light flag assert'
 Write-Host 'OK fix35 verified'
+
+$fix36 = Join-Path $PSScriptRoot 'apply-stb-fix36.ps1'
+Assert (Test-Path -LiteralPath $fix36) 'missing fix36'
+& $fix36 -Root $Root -Version $Version
