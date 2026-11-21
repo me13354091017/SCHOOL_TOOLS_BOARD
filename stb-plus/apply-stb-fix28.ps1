@@ -1,6 +1,6 @@
 # apply-stb-fix28.ps1
 # 1.0.1.35：数据目录判定收紧 + 升级时清理根目录上一版平铺的程序文件。
-# 1.0.1.40：链尾依次执行 fix29 →（fix30）→ fix31 → fix32 → fix33。
+# 1.0.1.41：链尾依次执行 fix29 →（fix30）→ fix31 → fix32 → fix33 → fix34。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -95,3 +95,7 @@ Assert (Test-Path -LiteralPath $fix32) 'missing fix32'
 $fix33 = Join-Path $PSScriptRoot 'apply-stb-fix33.ps1'
 Assert (Test-Path -LiteralPath $fix33) 'missing fix33'
 & $fix33 -Root $Root -Version $Version
+
+$fix34 = Join-Path $PSScriptRoot 'apply-stb-fix34.ps1'
+Assert (Test-Path -LiteralPath $fix34) 'missing fix34'
+& $fix34 -Root $Root -Version $Version
