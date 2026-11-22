@@ -1,6 +1,7 @@
 # apply-stb-fix41.ps1
-# 1.0.1.48：轻量批注（WPS Qt 放映窗）结束放映的最终方案。真机定位：纯 PostMessage 的 Esc 会被 Qt 忽略；
-#   但只要让放映窗真正收到一次鼠标点击，Esc 立刻生效。结束放映时：临时隐藏 STB 顶层面板 → 点击放映窗中心 → 发 Esc → 恢复。
+# 1.0.1.48：轻量批注（WPS Qt 放映窗）结束放映的最终方案。真机定位：
+#   纯 PostMessage 的 Esc 会被 Qt 忽略（无论 lParam/重试/前台）；但只要让放映窗真正收到一次鼠标点击，Esc 立刻生效。
+#   所以结束放映时：临时隐藏 STB 顶层面板 → 点击放映窗中心 → 发 Esc → 恢复 STB。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -130,3 +131,7 @@ $t2 = ReadText $pe
 Assert ($t2.Contains('StbPptHideClickEsc();')) 'call assert'
 Assert ($t2.Contains('StbMouseEvent(0x0002')) 'click assert'
 Write-Host 'OK fix41 verified'
+
+$fix42 = Join-Path $PSScriptRoot 'apply-stb-fix42.ps1'
+Assert (Test-Path -LiteralPath $fix42) 'missing fix42'
+& $fix42 -Root $Root -Version $Version
