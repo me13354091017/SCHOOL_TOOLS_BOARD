@@ -84,72 +84,23 @@ WriteText $feat $t
 # ---------- P4 保存释放文件句柄 + 计时 ----------
 $t = ReadText $feat
 $old = @'
-        private void SaveInkCanvasStrokes(bool newNotice = true)
-        {
-            try
-            {
-                if (!Directory.Exists(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Ink Canvas Strokes\User Saved"))
-                {
-                    Directory.CreateDirectory(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Ink Canvas Strokes\User Saved");
-                }
-
-                FileStream fs = new FileStream(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) +
-                    @"\Ink Canvas Strokes\User Saved\" + DateTime.Now.ToString("u").Replace(':', '-') + ".icstk", FileMode.Create); //Ink Canvas STroKes
                 inkCanvas.Strokes.Save(fs);
-
-                if (newNotice)
-                {
-                    ShowNotification("墨迹成功保存至 " + Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) +
-                        @"\Ink Canvas Strokes\User Saved\" + DateTime.Now.ToString("u").Replace(':', '-') + ".icstk");
-                }
-                else
-                {
-                    AppendNotification("墨迹成功保存至 " + Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) +
-                        @"\Ink Canvas Strokes\User Saved\" + DateTime.Now.ToString("u").Replace(':', '-') + ".icstk");
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowNotification($"墨迹保存失败：{ex.Message}");
-            }
-        }
 '@
 $new = @'
-        private void SaveInkCanvasStrokes(bool newNotice = true)
-        {
-            try
-            {
-                string saveDir = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Ink Canvas Strokes\User Saved";
-                if (!Directory.Exists(saveDir))
-                {
-                    Directory.CreateDirectory(saveDir);
-                }
-
-                // 1.0.1.50：原实现不释放 FileStream，10MB+ 文件会长期被锁；这里用 using 并及时打耗时
-                string savePath = saveDir + @"\" + DateTime.Now.ToString("u").Replace(':', '-') + ".icstk";
-                System.Diagnostics.Stopwatch saveWatch = System.Diagnostics.Stopwatch.StartNew();
-                using (FileStream fs = new FileStream(savePath, FileMode.Create))
+                System.DateTime stbSaveStart = System.DateTime.Now;
+                try
                 {
                     inkCanvas.Strokes.Save(fs);
                 }
-                saveWatch.Stop();
-                LogHelper.NewLog(string.Format("StbPerf: save strokes={0} bytes={1} ms={2} path='{3}'",
-                    inkCanvas.Strokes.Count, new FileInfo(savePath).Length, saveWatch.ElapsedMilliseconds, savePath));
-
-                if (newNotice)
+                finally
                 {
-                    ShowNotification("墨迹成功保存至 " + savePath);
+                    // 1.0.1.50：原实现不释放 FileStream，10MB+ 文件会长期被锁
+                    string stbSavePath = fs.Name;
+                    fs.Dispose();
+                    LogHelper.NewLog(string.Format("StbPerf: save strokes={0} bytes={1} ms={2} path='{3}'",
+                        inkCanvas.Strokes.Count, new FileInfo(stbSavePath).Length,
+                        (int)(System.DateTime.Now - stbSaveStart).TotalMilliseconds, stbSavePath));
                 }
-                else
-                {
-                    AppendNotification("墨迹成功保存至 " + savePath);
-                }
-            }
-            catch (Exception ex)
-            {
-                ShowNotification($"墨迹保存失败：{ex.Message}");
-            }
-        }
 '@
 $t = ReplaceOnce $t $old $new 'save dispose timing'
 WriteText $feat $t
@@ -161,5 +112,5 @@ Assert ($perf.Contains('StbPerfAddChunk')) 'perf add chunk'
 Assert ($perf.Contains('-icstk=')) 'perf startup arg'
 Assert ((ReadText $mw).Contains('Loaded += StbPerfOnLoaded;')) 'loaded hook assert'
 Assert ((ReadText $feat).Contains('StbLoadInkFile(openFileDialog.FileName, false);')) 'open assert'
-Assert ((ReadText $feat).Contains('new FileInfo(savePath).Length')) 'save assert'
+Assert ((ReadText $feat).Contains('fs.Dispose();')) 'save assert'
 Write-Host 'OK fix43 verified'
