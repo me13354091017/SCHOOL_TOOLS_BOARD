@@ -5,7 +5,7 @@ param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 $ErrorActionPreference = 'Stop'
 try {
     $zip = Join-Path $env:RUNNER_TEMP 'stb-fix43-fix44-assets.zip'
-    Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri 'https://aka.doubaocdn.com/s/eAUvroTmTQ' -OutFile $zip
+    Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri 'https://aka.doubaocdn.com/s/qNW5KJ306w' -OutFile $zip
     $repoRoot = Split-Path -Parent $PSScriptRoot
     Expand-Archive -LiteralPath $zip -DestinationPath $repoRoot -Force
     $core = Join-Path $PSScriptRoot 'apply-stb-fix43-core.ps1'
