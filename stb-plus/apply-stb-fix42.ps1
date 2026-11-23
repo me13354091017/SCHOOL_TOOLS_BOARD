@@ -122,3 +122,9 @@ $t2 = ReadText $pe
 Assert ($t2.Contains('StbPptClickShow();')) 'click call assert'
 Assert ($t2.Contains('StbPostMessageShow(h, 0x0201')) 'click message assert'
 Write-Host 'OK fix42 verified'
+
+# ---------- 链到 fix43（1.0.1.50 大笔记性能） ----------
+$next = Join-Path $PSScriptRoot 'apply-stb-fix43.ps1'
+Assert (Test-Path $next) 'missing apply-stb-fix43.ps1'
+& $next -Root $Root -Version $Version
+if (-not $?) { throw 'fix43 failed' }
