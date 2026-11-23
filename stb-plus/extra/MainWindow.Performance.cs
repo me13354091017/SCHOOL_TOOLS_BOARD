@@ -178,7 +178,7 @@ namespace InkCanvasPlus
                         StbPerfHookStroke(stroke, this);
                     }
                 }
-                long hookMs = phase.ElapsedMilliseconds;
+                hookMs = phase.ElapsedMilliseconds;
 
                 phase.Restart();
                 if (oldCount > 0)
