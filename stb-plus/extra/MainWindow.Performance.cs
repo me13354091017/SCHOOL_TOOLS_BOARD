@@ -12,10 +12,9 @@ using InkCanvasPlus.Helpers;
 
 namespace InkCanvasPlus
 {
-    // 1.0.1.51：10MB+ 大笔记加载。
-    // 真机基线（34,000 笔 / 10.7MB）：解析 1.5s；Strokes.Clear 约 15s；逐块 Add 更慢（每块都会触发全量重绘）。
-    // 最省时的做法是把整份 StrokeCollection 一次性赋给 InkCanvas（实测约 4.8s），
-    // 期间用遮罩提示进度、禁止误触，并在赋值前后接管 StrokesChanged 订阅与历史字典。
+    // 1.0.1.52：10MB+ 大笔记加载。
+    // 真机基线（34,000 笔 / 10.7MB）：解析 1.5s；整份 Strokes.Add 约 6s；Strokes.Clear 约 15s。
+    // 逐块 Add 会反复全量重绘（实测 33s），改为整份一次 Add；只有画布已有墨迹时才先 Clear。
     public partial class MainWindow
     {
         private bool _stbPerfLoadingInk;
@@ -137,6 +136,8 @@ namespace InkCanvasPlus
             Stopwatch totalWatch = Stopwatch.StartNew();
             long parseMs = 0;
             long applyMs = 0;
+            long hookMs = 0;
+            long clearMs = 0;
             long bytes = 0;
             int total = 0;
             int oldCount = inkCanvas.Strokes.Count;
@@ -156,8 +157,8 @@ namespace InkCanvasPlus
                 parseMs = phase.ElapsedMilliseconds;
                 total = loaded == null ? 0 : loaded.Count;
 
-                // 一次性替换整份集合：WPF 只建一次视觉树；分块 Add 每块都会全量重绘，实测反而更慢。
-                StbPerfShowBusy(string.Format("正在应用墨迹… {0} 笔（原有 {1} 笔，约 5 秒）", total, oldCount));
+                // 整份一次 Add：WPF 只建一遍视觉树；逐块 Add 每块都会全量重绘，实测反而更慢。
+                StbPerfShowBusy(string.Format("正在应用墨迹… {0} 笔（原有 {1} 笔）", total, oldCount));
                 StbPerfPump();
 
                 // 先摘掉旧集合的处理器；随后为加载进来的每笔补订阅（不克隆点集）。
@@ -169,6 +170,7 @@ namespace InkCanvasPlus
                 {
                     pair.Value.Clear();
                 }
+                phase.Restart();
                 if (loaded != null)
                 {
                     foreach (Stroke stroke in loaded)
@@ -176,9 +178,20 @@ namespace InkCanvasPlus
                         StbPerfHookStroke(stroke, this);
                     }
                 }
+                long hookMs = phase.ElapsedMilliseconds;
 
                 phase.Restart();
-                inkCanvas.Strokes = loaded;
+                if (oldCount > 0)
+                {
+                    inkCanvas.Strokes.Clear();
+                }
+                clearMs = phase.ElapsedMilliseconds;
+
+                phase.Restart();
+                if (loaded != null)
+                {
+                    inkCanvas.Strokes.Add(loaded);
+                }
                 applyMs = phase.ElapsedMilliseconds;
 
                 inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;
@@ -192,7 +205,7 @@ namespace InkCanvasPlus
                 {
                     ShowNotification(message);
                 }
-                LogHelper.NewLog(string.Format("StbPerf: load '{0}' strokes={1} bytes={2} parseMs={3} applyMs={4} totalMs={5} old={6}", path, total, bytes, parseMs, applyMs, totalMs, oldCount));
+                LogHelper.NewLog(string.Format("StbPerf: load '{0}' strokes={1} bytes={2} parseMs={3} hookMs={4} clearMs={5} addMs={6} totalMs={7} old={8}", path, total, bytes, parseMs, hookMs, clearMs, applyMs, totalMs, oldCount));
             }
             catch (Exception ex)
             {
