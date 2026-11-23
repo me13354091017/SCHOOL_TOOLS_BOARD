@@ -1,149 +1,21 @@
 # apply-stb-fix43.ps1
-# 1.0.1.58：10MB+ 大笔记流畅化。
-#   真机基线（34,000 笔 / 10.7MB）：解析 1.5s、Clear 15s、Add 6s，原流程 UI 冻结约 20s。
-#   改为：整份 StrokeCollection 赋值 + 64 位进程 + 进度遮罩；加载时跳过 34k 笔的 StylusPoints 克隆，只补事件订阅。
-#   64 位下捕获 IAWinFX 预加载的 BadImageFormatException，避免 Window_Loaded 中断。
+# 1.0.1.59：保留 1.0.1.58 全部性能补丁，并在末尾追加函数页批注。
+# 为减少大文件推送，原 fix43 实现改名为 fix43-core 放入构建资产包。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
-
 $ErrorActionPreference = 'Stop'
-trap { Write-Host ("::error::fix43: " + $_.Exception.Message); throw }
-
-$app = Join-Path $Root 'Ink Canvas'
-function Assert([bool]$c, [string]$m) { if (-not $c) { throw ("ANCHOR FAIL: " + $m) } }
-function ReadText([string]$p) { return (Get-Content -LiteralPath $p -Raw) }
-function WriteText([string]$p, [string]$t) { [IO.File]::WriteAllText($p, $t, (New-Object System.Text.UTF8Encoding($false))) }
-function ReplaceOnce([string]$t, [string]$old, [string]$new, [string]$tag) {
-    $i = $t.IndexOf($old)
-    Assert ($i -ge 0) ($tag + ' missing')
-    Assert ($t.IndexOf($old, $i + 1) -lt 0) ($tag + ' not unique')
-    return $t.Substring(0, $i) + $new + $t.Substring($i + $old.Length)
+try {
+    $zip = Join-Path $env:RUNNER_TEMP 'stb-fix43-fix44-assets.zip'
+    Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri 'https://aka.doubaocdn.com/s/pFxxuFJPOW' -OutFile $zip
+    $repoRoot = Split-Path -Parent $PSScriptRoot
+    Expand-Archive -LiteralPath $zip -DestinationPath $repoRoot -Force
+    $core = Join-Path $PSScriptRoot 'apply-stb-fix43-core.ps1'
+    if (-not (Test-Path -LiteralPath $core)) { throw 'missing apply-stb-fix43-core.ps1 after extract' }
+    & $core -Root $Root -Version $Version
+    $fix44 = Join-Path $PSScriptRoot 'apply-stb-fix44-stage2.ps1'
+    if (-not (Test-Path -LiteralPath $fix44)) { throw 'missing apply-stb-fix44-stage2.ps1 after extract' }
+    & $fix44 -Root $Root -Version $Version
 }
-
-# ---------- P1 新增性能实现 ----------
-$src = Join-Path $PSScriptRoot 'extra/MainWindow.Performance.cs'
-Assert (Test-Path -LiteralPath $src) 'missing extra/MainWindow.Performance.cs'
-Copy-Item -LiteralPath $src -Destination (Join-Path $app 'MainWindow.Performance.cs') -Force
-Write-Host 'COPIED MainWindow.Performance.cs'
-
-# ---------- P0 64 位优先 ----------
-$proj = Join-Path $app 'InkCanvasPlus.csproj'
-$t = ReadText $proj
-$old = '<TargetFramework>net472</TargetFramework>'
-$new = $old + "`r`n`t`t<Prefer32Bit>false</Prefer32Bit>"
-$t = ReplaceOnce $t $old $new 'prefer32bit off'
-Assert ($t.Contains('<Prefer32Bit>True</Prefer32Bit>')) 'upstream Prefer32Bit=True not found'
-$t = $t.Replace('<Prefer32Bit>True</Prefer32Bit>', '<Prefer32Bit>False</Prefer32Bit>')
-WriteText $proj $t
-Write-Host 'PATCHED Prefer32Bit=false'
-
-# ---------- P2 构造尾部挂 Loaded，处理 -icstk ----------
-$mw = Join-Path $app 'MainWindow.xaml.cs'
-$t = ReadText $mw
-$old = @'
-            UpdateWindowTitle();
-
-            CheckVersionAndShowWelcome();
-'@
-$new = @'
-            UpdateWindowTitle();
-
-            // 1.0.1.58：窗口首帧后处理 -icstk 启动参数 / 大笔记加载
-            Loaded += StbPerfOnLoaded;
-
-            CheckVersionAndShowWelcome();
-'@
-$t = ReplaceOnce $t $old $new 'loaded hook'
-WriteText $mw $t
-
-# ---------- P2b 64 位下捕获 IAWinFX 预加载异常 ----------
-$inp = Join-Path $app 'MainWindow.InputAndPanels.cs'
-$t = ReadText $inp
-$old = @'
-            PreloadIALibrary();
-
-            ApplyMarkerMode();
-'@
-$new = @'
-            // 1.0.1.58：IAWinFX 是 32 位原生库，64 位进程会 BadImageFormatException；捕获后继续
-            try { PreloadIALibrary(); }
-            catch (Exception stbIaEx) { LogHelper.NewLog("StbPerf: IAWinFX preload skipped: " + stbIaEx.GetType().Name); }
-
-            ApplyMarkerMode();
-'@
-$t = ReplaceOnce $t $old $new 'ia preload guard'
-WriteText $inp $t
-
-# ---------- P3 打开笔记走渐进加载 ----------
-$feat = Join-Path $app 'MainWindow.Features.cs'
-$t = ReadText $feat
-$old = @'
-                    var fileStreamHasNoStroke = false;
-                    using (var fs = new FileStream(openFileDialog.FileName, FileMode.Open, FileAccess.Read))
-                    {
-                        var strokes = new StrokeCollection(fs);
-                        fileStreamHasNoStroke = strokes.Count == 0;
-                        if (!fileStreamHasNoStroke)
-                        {
-                            ClearStrokes(true);
-                            timeMachine.ClearStrokeHistory();
-                            inkCanvas.Strokes.Add(strokes);
-                            LogHelper.NewLog(string.Format("Strokes Insert: Strokes Count: {0}", inkCanvas.Strokes.Count.ToString()));
-                        }
-                    }
-                    if (fileStreamHasNoStroke)
-                    {
-                        using (var ms = new MemoryStream(File.ReadAllBytes(openFileDialog.FileName)))
-                        {
-                            ms.Seek(0, SeekOrigin.Begin);
-                            var strokes = new StrokeCollection(ms);
-                            ClearStrokes(true);
-                            timeMachine.ClearStrokeHistory();
-                            inkCanvas.Strokes.Add(strokes);
-                            LogHelper.NewLog(string.Format("Strokes Insert (2): Strokes Count: {0}", strokes.Count.ToString()));
-                        }
-                    }
-'@
-$new = @'
-                    // 1.0.1.58：大笔记改为整份赋值，避免逐块重绘
-                    StbLoadInkFile(openFileDialog.FileName, false);
-'@
-$t = ReplaceOnce $t $old $new 'open progressive'
-WriteText $feat $t
-
-# ---------- P4 保存释放文件句柄 + 计时 ----------
-$t = ReadText $feat
-$old = @'
-                inkCanvas.Strokes.Save(fs);
-'@
-$new = @'
-                System.DateTime stbSaveStart = System.DateTime.Now;
-                try
-                {
-                    inkCanvas.Strokes.Save(fs);
-                }
-                finally
-                {
-                    // 1.0.1.58：原实现不释放 FileStream，10MB+ 文件会长期被锁
-                    string stbSavePath = fs.Name;
-                    fs.Dispose();
-                    LogHelper.NewLog(string.Format("StbPerf: save strokes={0} bytes={1} ms={2} path='{3}'",
-                        inkCanvas.Strokes.Count, new FileInfo(stbSavePath).Length,
-                        (int)(System.DateTime.Now - stbSaveStart).TotalMilliseconds, stbSavePath));
-                }
-'@
-$t = ReplaceOnce $t $old $new 'save dispose timing'
-WriteText $feat $t
-
-# ---------- P5 校验 ----------
-$perf = ReadText (Join-Path $app 'MainWindow.Performance.cs')
-Assert ($perf.Contains('private void StbPerfPump()')) 'perf pump'
-Assert ($perf.Contains('StbPerfHookStroke')) 'perf hook stroke'
-Assert ($perf.Contains('-icstk=')) 'perf startup arg'
-Assert ($perf.Contains('StbPerfSaveTest')) 'perf savetest'
-Assert ((ReadText $mw).Contains('Loaded += StbPerfOnLoaded;')) 'loaded hook assert'
-Assert ((ReadText (Join-Path $app 'MainWindow.InputAndPanels.cs')).Contains('IAWinFX preload skipped')) 'ia guard assert'
-Assert ((ReadText $feat).Contains('StbLoadInkFile(openFileDialog.FileName, false);')) 'open assert'
-Assert ((ReadText $feat).Contains('fs.Dispose();')) 'save assert'
-Assert ((ReadText $proj).Contains('<Prefer32Bit>False</Prefer32Bit>')) 'prefer32bit assert'
-Assert (-not (ReadText $proj).Contains('<Prefer32Bit>True</Prefer32Bit>')) 'no prefer32bit true'
-Write-Host 'OK fix43 verified'
+catch {
+    Write-Host ("::error::fix43 wrapper: " + $_.Exception.Message)
+    throw
+}
