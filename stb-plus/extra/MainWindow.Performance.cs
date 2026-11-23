@@ -12,15 +12,12 @@ using InkCanvasPlus.Helpers;
 
 namespace InkCanvasPlus
 {
-    // 1.0.1.50：10MB+ 大笔记的渐进加载。
-    // 真机基线（34,000 笔 / 10.7MB）：解析 1.5s、Strokes.Clear 约 15s、Strokes.Add 约 6s，
-    // 原流程一次性做完会让界面冻结约 20s。这里改为分块清屏 + 分块添加，每块之间泵一次消息，
-    // 让窗口保持重绘、能响应输入，同时用遮罩防止用户在加载中点按钮造成状态错乱。
+    // 1.0.1.51：10MB+ 大笔记加载。
+    // 真机基线（34,000 笔 / 10.7MB）：解析 1.5s；Strokes.Clear 约 15s；逐块 Add 更慢（每块都会触发全量重绘）。
+    // 最省时的做法是把整份 StrokeCollection 一次性赋给 InkCanvas（实测约 4.8s），
+    // 期间用遮罩提示进度、禁止误触，并在赋值前后接管 StrokesChanged 订阅与历史字典。
     public partial class MainWindow
     {
-        private const int StbPerfClearChunk = 300;
-        private const int StbPerfAddChunk = 300;
-
         private bool _stbPerfLoadingInk;
         private Border _stbPerfBusyLayer;
         private TextBlock _stbPerfBusyText;
@@ -59,7 +56,7 @@ namespace InkCanvasPlus
             return null;
         }
 
-        /// <summary>让 Dispatcher 处理一轮输入/渲染，再继续下一块，避免整段冻结。</summary>
+        /// <summary>让 Dispatcher 处理一轮输入/渲染，避免进度提示还没画出来就开始长任务。</summary>
         private void StbPerfPump()
         {
             DispatcherFrame frame = new DispatcherFrame();
@@ -138,12 +135,11 @@ namespace InkCanvasPlus
             }
             _stbPerfLoadingInk = true;
             Stopwatch totalWatch = Stopwatch.StartNew();
-            long totalMs = 0;
             long parseMs = 0;
-            long clearMs = 0;
-            long addMs = 0;
+            long applyMs = 0;
             long bytes = 0;
             int total = 0;
+            int oldCount = inkCanvas.Strokes.Count;
 
             Cursor previousCursor = Mouse.OverrideCursor;
             bool previousHitTest = inkCanvas.IsHitTestVisible;
@@ -160,66 +156,43 @@ namespace InkCanvasPlus
                 parseMs = phase.ElapsedMilliseconds;
                 total = loaded == null ? 0 : loaded.Count;
 
-                // 清空旧画布：分块移除，块间泵消息。先摘掉集合处理器，避免 34k 次历史提交。
-                StbPerfShowBusy(string.Format("正在整理现有墨迹…（0 / {0}）", total));
+                // 一次性替换整份集合：WPF 只建一次视觉树；分块 Add 每块都会全量重绘，实测反而更慢。
+                StbPerfShowBusy(string.Format("正在应用墨迹… {0} 笔（原有 {1} 笔，约 5 秒）", total, oldCount));
                 StbPerfPump();
+
+                // 先摘掉旧集合的处理器；随后为加载进来的每笔补订阅（不克隆点集）。
                 inkCanvas.Strokes.StrokesChanged -= StrokesOnStrokesChanged;
                 handlerDetached = true;
-                phase.Restart();
-                while (inkCanvas.Strokes.Count > 0)
-                {
-                    int count = Math.Min(StbPerfClearChunk, inkCanvas.Strokes.Count);
-                    StrokeCollection part = new StrokeCollection();
-                    for (int i = 0; i < count; i++)
-                    {
-                        part.Add(inkCanvas.Strokes[i]);
-                    }
-                    inkCanvas.Strokes.Remove(part);
-                    StbPerfPump();
-                }
-                clearMs = phase.ElapsedMilliseconds;
-
-                // 旧笔迹的初始点集引用在这里一次性释放，再为加载进来的笔迹建轻量引用。
                 StrokeInitialHistory.Clear();
-
-                // 添加新墨迹：分块添加，逐块给每笔补事件订阅（不克隆点集）。
-                phase.Restart();
-                for (int offset = 0; offset < total; offset += StbPerfAddChunk)
-                {
-                    int count = Math.Min(StbPerfAddChunk, total - offset);
-                    StrokeCollection part = new StrokeCollection();
-                    for (int i = 0; i < count; i++)
-                    {
-                        Stroke stroke = loaded[offset + i];
-                        StbPerfHookStroke(stroke, this);
-                        part.Add(stroke);
-                    }
-                    inkCanvas.Strokes.Add(part);
-                    int done = offset + count;
-                    StbPerfShowBusy(string.Format("正在应用墨迹… {0} / {1}（{2}%）", done, total, (int)(done * 100.0 / Math.Max(1, total))));
-                    StbPerfPump();
-                }
-                addMs = phase.ElapsedMilliseconds;
-
-                // 历史与旧笔迹引用全部释放，避免大文件加载后内存里还挂着两份。
-                inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;
-                handlerDetached = false;
-                timeMachine.ClearStrokeHistory();
                 DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
-                // 保留 Key（DrawingAttributesHistoryFlag 的 Guid 键是后续属性变更回调要用的），只清空引用
                 foreach (KeyValuePair<Guid, List<Stroke>> pair in DrawingAttributesHistoryFlag)
                 {
                     pair.Value.Clear();
                 }
+                if (loaded != null)
+                {
+                    foreach (Stroke stroke in loaded)
+                    {
+                        StbPerfHookStroke(stroke, this);
+                    }
+                }
 
-                totalMs = totalWatch.ElapsedMilliseconds;
+                phase.Restart();
+                inkCanvas.Strokes = loaded;
+                applyMs = phase.ElapsedMilliseconds;
+
+                inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;
+                handlerDetached = false;
+                timeMachine.ClearStrokeHistory();
+
+                long totalMs = totalWatch.ElapsedMilliseconds;
                 string message = string.Format("笔记已加载：{0} 笔，{1:0.0} MB，用时 {2:0.0} 秒", total, bytes / 1048576.0, totalMs / 1000.0);
                 StbPerfHideBusy();
                 if (!isStartup)
                 {
                     ShowNotification(message);
                 }
-                LogHelper.NewLog(string.Format("StbPerf: load '{0}' strokes={1} bytes={2} parseMs={3} clearMs={4} addMs={5} totalMs={6}", path, total, bytes, parseMs, clearMs, addMs, totalMs));
+                LogHelper.NewLog(string.Format("StbPerf: load '{0}' strokes={1} bytes={2} parseMs={3} applyMs={4} totalMs={5} old={6}", path, total, bytes, parseMs, applyMs, totalMs, oldCount));
             }
             catch (Exception ex)
             {

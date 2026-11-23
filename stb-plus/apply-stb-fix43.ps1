@@ -1,7 +1,7 @@
 # apply-stb-fix43.ps1
-# 1.0.1.50：10MB+ 大笔记流畅化。
+# 1.0.1.51：10MB+ 大笔记流畅化。
 #   真机基线（34,000 笔 / 10.7MB）：解析 1.5s、Clear 15s、Add 6s，原流程 UI 冻结约 20s。
-#   改为：分块清屏 + 分块添加 + 每块泵消息 + 加载遮罩；加载时跳过 34k 笔的 StylusPoints 克隆，只补事件订阅。
+#   改为：整份 StrokeCollection 一次性赋给 InkCanvas（实测约 4.8s）+ 进度遮罩；加载时跳过 34k 笔的 StylusPoints 克隆，只补事件订阅。
 #   另支持 -icstk <路径> 启动参数（真机基线/双击打开用），保存时释放文件句柄并记录耗时。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
@@ -36,7 +36,7 @@ $old = @'
 $new = @'
             UpdateWindowTitle();
 
-            // 1.0.1.50：窗口首帧后处理 -icstk 启动参数 / 大笔记渐进加载
+            // 1.0.1.51：窗口首帧后处理 -icstk 启动参数 / 大笔记加载
             Loaded += StbPerfOnLoaded;
 
             CheckVersionAndShowWelcome();
@@ -75,7 +75,7 @@ $old = @'
                     }
 '@
 $new = @'
-                    // 1.0.1.50：大笔记改为分块清屏/分块添加，块间泵消息，避免 UI 冻结约 20s
+                    // 1.0.1.51：大笔记改为一次性切换整份墨迹集合，避免 15s 清屏 + 6s 逐笔添加
                     StbLoadInkFile(openFileDialog.FileName, false);
 '@
 $t = ReplaceOnce $t $old $new 'open progressive'
@@ -94,7 +94,7 @@ $new = @'
                 }
                 finally
                 {
-                    // 1.0.1.50：原实现不释放 FileStream，10MB+ 文件会长期被锁
+                    // 1.0.1.51：原实现不释放 FileStream，10MB+ 文件会长期被锁
                     string stbSavePath = fs.Name;
                     fs.Dispose();
                     LogHelper.NewLog(string.Format("StbPerf: save strokes={0} bytes={1} ms={2} path='{3}'",
@@ -108,8 +108,8 @@ WriteText $feat $t
 # ---------- P5 校验 ----------
 $perf = ReadText (Join-Path $app 'MainWindow.Performance.cs')
 Assert ($perf.Contains('private void StbPerfPump()')) 'perf pump'
-Assert ($perf.Contains('StbPerfAddChunk')) 'perf add chunk'
 Assert ($perf.Contains('-icstk=')) 'perf startup arg'
+Assert ($perf.Contains('inkCanvas.Strokes = loaded;')) 'perf assign collection'
 Assert ((ReadText $mw).Contains('Loaded += StbPerfOnLoaded;')) 'loaded hook assert'
 Assert ((ReadText $feat).Contains('StbLoadInkFile(openFileDialog.FileName, false);')) 'open assert'
 Assert ((ReadText $feat).Contains('fs.Dispose();')) 'save assert'
