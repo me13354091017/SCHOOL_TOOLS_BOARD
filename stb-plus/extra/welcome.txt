@@ -1,4 +1,4 @@
-SchoolToolsBoard（STB）课堂白板 1.0.1.56
+SchoolToolsBoard（STB）课堂白板 1.0.1.57
 底座：Ink Canvas Plus（GPL-3.0）· 发行者：周之尧
 
 【本版：10MB+ 大笔记流畅化】

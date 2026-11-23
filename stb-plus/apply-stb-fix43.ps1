@@ -1,5 +1,5 @@
 # apply-stb-fix43.ps1
-# 1.0.1.56：10MB+ 大笔记流畅化。
+# 1.0.1.57：10MB+ 大笔记流畅化。
 #   真机基线（34,000 笔 / 10.7MB）：解析 1.5s、Clear 15s、Add 6s，原流程 UI 冻结约 20s。
 #   改为：整份 StrokeCollection 赋值 + 64 位进程 + 进度遮罩；加载时跳过 34k 笔的 StylusPoints 克隆，只补事件订阅。
 #   64 位下捕获 IAWinFX 预加载的 BadImageFormatException，避免 Window_Loaded 中断。
@@ -48,12 +48,13 @@ $old = @'
 $new = @'
             UpdateWindowTitle();
 
-            // 1.0.1.56：窗口首帧后处理 -icstk 启动参数 / 大笔记渐进加载
+            // 1.0.1.57：窗口首帧后处理 -icstk 启动参数 / 大笔记渐进加载
             Loaded += StbPerfOnLoaded;
 
             CheckVersionAndShowWelcome();
 '@
 $t = ReplaceOnce $t $old $new 'loaded hook'
+WriteText $mw $t
 
 # ---------- P2b 64 位下跳过 IAWinFX 预加载（原生库只有 x86）----------
 $inp = Join-Path $app 'MainWindow.InputAndPanels.cs'
@@ -64,7 +65,7 @@ $old = @'
             ApplyMarkerMode();
 '@
 $new = @'
-            // 1.0.1.56：IAWinFX 是 32 位原生库，64 位进程会 BadImageFormatException；捕获后继续，64 位下仅手写识别不可用
+            // 1.0.1.57：IAWinFX 是 32 位原生库，64 位进程会 BadImageFormatException；捕获后继续，64 位下仅手写识别不可用
             try { PreloadIALibrary(); }
             catch (Exception stbIaEx) { LogHelper.NewLog("StbPerf: IAWinFX preload skipped: " + stbIaEx.GetType().Name); }
 
@@ -104,7 +105,7 @@ $old = @'
                     }
 '@
 $new = @'
-                    // 1.0.1.56：大笔记改为整份赋值，避免逐块重绘
+                    // 1.0.1.57：大笔记改为整份赋值，避免逐块重绘
                     StbLoadInkFile(openFileDialog.FileName, false);
 '@
 $t = ReplaceOnce $t $old $new 'open progressive'
@@ -123,7 +124,7 @@ $new = @'
                 }
                 finally
                 {
-                    // 1.0.1.56：原实现不释放 FileStream，10MB+ 文件会长期被锁
+                    // 1.0.1.57：原实现不释放 FileStream，10MB+ 文件会长期被锁
                     string stbSavePath = fs.Name;
                     fs.Dispose();
                     LogHelper.NewLog(string.Format("StbPerf: save strokes={0} bytes={1} ms={2} path='{3}'",
