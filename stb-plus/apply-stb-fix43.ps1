@@ -1,5 +1,5 @@
 # apply-stb-fix43.ps1
-# 1.0.1.60：保留 fix43 性能补丁，并在末尾追加函数页批注和浮动栏最高层。
+# 1.0.1.61：保留 fix43 性能补丁；追加全局批注 + 浮动栏/窗口层级。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 $ErrorActionPreference = 'Stop'
 try {
@@ -17,6 +17,9 @@ try {
     $fix44 = Join-Path $PSScriptRoot 'apply-stb-fix44-stage2.ps1'
     if (-not (Test-Path -LiteralPath $fix44)) { throw 'missing apply-stb-fix44-stage2.ps1 after extract' }
     & $fix44 -Root $Root -Version $Version
+    $fix45 = Join-Path $PSScriptRoot 'apply-stb-fix45-stage3.ps1'
+    if (-not (Test-Path -LiteralPath $fix45)) { throw 'missing apply-stb-fix45-stage3.ps1 after extract' }
+    & $fix45 -Root $Root -Version $Version
 }
 catch {
     Write-Host ("::error::fix43 wrapper: " + $_.Exception.Message)
