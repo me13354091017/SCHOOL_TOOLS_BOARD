@@ -1,7 +1,7 @@
 # apply-stb-fix43.ps1
-# 1.0.1.52：10MB+ 大笔记流畅化。
-#   真机基线（34,000 笔 / 10.7MB）：解析 1.5s、整份 Add 约 6s、Clear 约 15s；原流程 UI 冻结约 20s。
-#   改为：整份 Strokes.Add 一次完成（实测约 6s）+ 进度遮罩；加载时跳过 34k 笔的 StylusPoints 克隆，只补事件订阅。
+# 1.0.1.53：10MB+ 大笔记流畅化。
+#   真机基线（34,000 笔 / 10.7MB）：解析 1.5s、Clear 15s、Add 6s，原流程 UI 冻结约 20s。
+#   改为：整份 StrokeCollection 赋值 + 64 位进程 + 进度遮罩；加载时跳过 34k 笔的 StylusPoints 克隆，只补事件订阅。
 #   另支持 -icstk <路径> 启动参数（真机基线/双击打开用），保存时释放文件句柄并记录耗时。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
@@ -25,6 +25,15 @@ Assert (Test-Path -LiteralPath $src) 'missing extra/MainWindow.Performance.cs'
 Copy-Item -LiteralPath $src -Destination (Join-Path $app 'MainWindow.Performance.cs') -Force
 Write-Host 'COPIED MainWindow.Performance.cs'
 
+# ---------- P0 64 位优先：32 位进程打开 10MB+ 笔记明显更慢 ----------
+$proj = Join-Path $app 'InkCanvasPlus.csproj'
+$t = ReadText $proj
+$old = '<TargetFramework>net472</TargetFramework>'
+$new = $old + "`r`n`t`t<Prefer32Bit>false</Prefer32Bit>"
+$t = ReplaceOnce $t $old $new 'prefer32bit off'
+WriteText $proj $t
+Write-Host 'PATCHED Prefer32Bit=false'
+
 # ---------- P2 构造尾部挂 Loaded，处理 -icstk ----------
 $mw = Join-Path $app 'MainWindow.xaml.cs'
 $t = ReadText $mw
@@ -36,7 +45,7 @@ $old = @'
 $new = @'
             UpdateWindowTitle();
 
-            // 1.0.1.52：窗口首帧后处理 -icstk 启动参数 / 大笔记加载
+            // 1.0.1.53：窗口首帧后处理 -icstk 启动参数 / 大笔记加载
             Loaded += StbPerfOnLoaded;
 
             CheckVersionAndShowWelcome();
@@ -75,7 +84,7 @@ $old = @'
                     }
 '@
 $new = @'
-                    // 1.0.1.52：大笔记改为整份一次 Add，避免逐块重绘
+                    // 1.0.1.53：大笔记改为整份赋值，避免逐块重绘
                     StbLoadInkFile(openFileDialog.FileName, false);
 '@
 $t = ReplaceOnce $t $old $new 'open progressive'
@@ -94,7 +103,7 @@ $new = @'
                 }
                 finally
                 {
-                    // 1.0.1.52：原实现不释放 FileStream，10MB+ 文件会长期被锁
+                    // 1.0.1.53：原实现不释放 FileStream，10MB+ 文件会长期被锁
                     string stbSavePath = fs.Name;
                     fs.Dispose();
                     LogHelper.NewLog(string.Format("StbPerf: save strokes={0} bytes={1} ms={2} path='{3}'",
@@ -108,9 +117,10 @@ WriteText $feat $t
 # ---------- P5 校验 ----------
 $perf = ReadText (Join-Path $app 'MainWindow.Performance.cs')
 Assert ($perf.Contains('private void StbPerfPump()')) 'perf pump'
+Assert ($perf.Contains('StbPerfHookStroke')) 'perf hook stroke'
 Assert ($perf.Contains('-icstk=')) 'perf startup arg'
-Assert ($perf.Contains('inkCanvas.Strokes.Add(loaded);')) 'perf bulk add'
 Assert ((ReadText $mw).Contains('Loaded += StbPerfOnLoaded;')) 'loaded hook assert'
 Assert ((ReadText $feat).Contains('StbLoadInkFile(openFileDialog.FileName, false);')) 'open assert'
 Assert ((ReadText $feat).Contains('fs.Dispose();')) 'save assert'
+Assert ((ReadText $proj).Contains('<Prefer32Bit>false</Prefer32Bit>')) 'prefer32bit assert'
 Write-Host 'OK fix43 verified'

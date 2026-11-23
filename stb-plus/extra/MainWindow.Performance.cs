@@ -12,9 +12,9 @@ using InkCanvasPlus.Helpers;
 
 namespace InkCanvasPlus
 {
-    // 1.0.1.52：10MB+ 大笔记加载。
-    // 真机基线（34,000 笔 / 10.7MB）：解析 1.5s；整份 Strokes.Add 约 6s；Strokes.Clear 约 15s。
-    // 逐块 Add 会反复全量重绘（实测 33s），改为整份一次 Add；只有画布已有墨迹时才先 Clear。
+    // 1.0.1.53：10MB+ 大笔记加载。
+    // 真机实测：32 位进程里整份 Add 约 23s、整体赋值约 17s；64 位进程两者都显著更快。
+    // 这里同时做两件事：工程改为 64 位优先（Prefer32Bit=false），加载改为整份 StrokeCollection 赋值。
     public partial class MainWindow
     {
         private bool _stbPerfLoadingInk;
@@ -157,7 +157,7 @@ namespace InkCanvasPlus
                 parseMs = phase.ElapsedMilliseconds;
                 total = loaded == null ? 0 : loaded.Count;
 
-                // 整份一次 Add：WPF 只建一遍视觉树；逐块 Add 每块都会全量重绘，实测反而更慢。
+                // 整份赋值：WPF 只建一次视觉树；逐块 Add 每块都会全量重绘，实测更慢。
                 StbPerfShowBusy(string.Format("正在应用墨迹… {0} 笔（原有 {1} 笔）", total, oldCount));
                 StbPerfPump();
 
@@ -181,17 +181,7 @@ namespace InkCanvasPlus
                 hookMs = phase.ElapsedMilliseconds;
 
                 phase.Restart();
-                if (oldCount > 0)
-                {
-                    inkCanvas.Strokes.Clear();
-                }
-                clearMs = phase.ElapsedMilliseconds;
-
-                phase.Restart();
-                if (loaded != null)
-                {
-                    inkCanvas.Strokes.Add(loaded);
-                }
+                inkCanvas.Strokes = loaded;
                 applyMs = phase.ElapsedMilliseconds;
 
                 inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;
