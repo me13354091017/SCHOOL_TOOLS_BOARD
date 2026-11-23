@@ -20,6 +20,9 @@ try {
     $fix45 = Join-Path $PSScriptRoot 'apply-stb-fix45-stage3.ps1'
     if (-not (Test-Path -LiteralPath $fix45)) { throw 'missing apply-stb-fix45-stage3.ps1 after extract' }
     & $fix45 -Root $Root -Version $Version
+    $fix46 = Join-Path $PSScriptRoot 'apply-stb-fix46-stage4.ps1'
+    if (-not (Test-Path -LiteralPath $fix46)) { throw 'missing apply-stb-fix46-stage4.ps1 after extract' }
+    & $fix46 -Root $Root -Version $Version
 }
 catch {
     Write-Host ("::error::fix43 wrapper: " + $_.Exception.Message)
