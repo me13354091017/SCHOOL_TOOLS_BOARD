@@ -1,11 +1,14 @@
 # apply-stb-fix43.ps1
-# 1.0.1.59：保留 1.0.1.58 全部性能补丁，并在末尾追加函数页批注。
-# 为减少大文件推送，原 fix43 实现改名为 fix43-core 放入构建资产包。
+# 1.0.1.60：保留 fix43 性能补丁，并在末尾追加函数页批注和浮动栏最高层。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 $ErrorActionPreference = 'Stop'
 try {
+    $urlFile = Join-Path $PSScriptRoot 'fix44-assets.url'
+    if (-not (Test-Path -LiteralPath $urlFile)) { throw 'missing fix44-assets.url' }
+    $url = (Get-Content -LiteralPath $urlFile -Raw).Trim()
+    if (-not $url) { throw 'empty fix44-assets.url' }
     $zip = Join-Path $env:RUNNER_TEMP 'stb-fix43-fix44-assets.zip'
-    Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri 'https://aka.doubaocdn.com/s/8KZH7NXUQE' -OutFile $zip
+    Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $url -OutFile $zip
     $repoRoot = Split-Path -Parent $PSScriptRoot
     Expand-Archive -LiteralPath $zip -DestinationPath $repoRoot -Force
     $core = Join-Path $PSScriptRoot 'apply-stb-fix43-core.ps1'
