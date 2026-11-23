@@ -12,9 +12,8 @@ using InkCanvasPlus.Helpers;
 
 namespace InkCanvasPlus
 {
-    // 1.0.1.53：10MB+ 大笔记加载。
-    // 真机实测：32 位进程里整份 Add 约 23s、整体赋值约 17s；64 位进程两者都显著更快。
-    // 这里同时做两件事：工程改为 64 位优先（Prefer32Bit=false），加载改为整份 StrokeCollection 赋值。
+    // 1.0.1.58：10MB+ 大笔记加载。
+    // 真机基线（34,000 笔 / 10.7MB）：解析 1.5s；Strokes.Clear 约 15s；逐块 Add 更慢（每块都会触发全量重绘）。
     public partial class MainWindow
     {
         private bool _stbPerfLoadingInk;
@@ -26,7 +25,6 @@ namespace InkCanvasPlus
             string path = StbPerfGetStartupInkPath();
             if (!string.IsNullOrEmpty(path) && File.Exists(path))
             {
-                // 等窗口完成首帧，再开始读文件，避免启动时一片白。
                 Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(delegate
                 {
                     StbLoadInkFile(path, true);
@@ -37,10 +35,7 @@ namespace InkCanvasPlus
         private static string StbPerfGetStartupInkPath()
         {
             string[] args = App.StartArgs;
-            if (args == null)
-            {
-                return null;
-            }
+            if (args == null) { return null; }
             for (int i = 0; i < args.Length; i++)
             {
                 if (string.Equals(args[i], "-icstk", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
@@ -55,7 +50,6 @@ namespace InkCanvasPlus
             return null;
         }
 
-        /// <summary>让 Dispatcher 处理一轮输入/渲染，避免进度提示还没画出来就开始长任务。</summary>
         private void StbPerfPump()
         {
             DispatcherFrame frame = new DispatcherFrame();
@@ -91,13 +85,9 @@ namespace InkCanvasPlus
 
         private void StbPerfHideBusy()
         {
-            if (_stbPerfBusyLayer != null)
-            {
-                _stbPerfBusyLayer.Visibility = Visibility.Collapsed;
-            }
+            if (_stbPerfBusyLayer != null) { _stbPerfBusyLayer.Visibility = Visibility.Collapsed; }
         }
 
-        /// <summary>读取 .icstk；兼容极少数被上游写成“空集合”的文件。</summary>
         private StrokeCollection StbPerfReadInk(string path, out long bytes)
         {
             byte[] data = File.ReadAllBytes(path);
@@ -105,10 +95,7 @@ namespace InkCanvasPlus
             using (MemoryStream ms = new MemoryStream(data))
             {
                 StrokeCollection strokes = new StrokeCollection(ms);
-                if (strokes.Count > 0)
-                {
-                    return strokes;
-                }
+                if (strokes.Count > 0) { return strokes; }
             }
             using (MemoryStream ms = new MemoryStream(data))
             {
@@ -118,27 +105,58 @@ namespace InkCanvasPlus
 
         private static void StbPerfHookStroke(Stroke stroke, MainWindow owner)
         {
-            // 只补事件订阅与初始点集的“引用”，不 Clone：34k 笔的 Clone 会白占几十 MB。
-            // Stroke_StylusPointsChanged 会读 StrokeInitialHistory[sender]，这里必须建键，否则大笔记里操作笔迹会 KeyNotFound。
             owner.StrokeInitialHistory[stroke] = stroke.StylusPoints;
             stroke.StylusPointsChanged += owner.Stroke_StylusPointsChanged;
             stroke.StylusPointsReplaced += owner.Stroke_StylusPointsReplaced;
             stroke.DrawingAttributesChanged += owner.Stroke_DrawingAttributesChanged;
         }
 
+        private static bool StbPerfHasArg(string name)
+        {
+            string[] args = App.StartArgs;
+            if (args == null) { return false; }
+            foreach (string a in args)
+            {
+                if (string.Equals(a, name, StringComparison.OrdinalIgnoreCase)) { return true; }
+            }
+            return false;
+        }
+
+        private void StbPerfSaveTest(string sourcePath)
+        {
+            try
+            {
+                StylusPointCollection pts = new StylusPointCollection();
+                for (int i = 0; i <= 120; i++)
+                {
+                    pts.Add(new StylusPoint(700 + i * 6, 500 + (int)(40 * Math.Sin(i / 120.0 * Math.PI))));
+                }
+                inkCanvas.Strokes.Add(new Stroke(pts));
+
+                string dir = Path.Combine(Path.GetTempPath(), "stb_perf");
+                Directory.CreateDirectory(dir);
+                string outPath = Path.Combine(dir, "saved_" + Path.GetFileNameWithoutExtension(sourcePath) + ".icstk");
+                Stopwatch sw = Stopwatch.StartNew();
+                using (FileStream fs = new FileStream(outPath, FileMode.Create, FileAccess.Write))
+                {
+                    inkCanvas.Strokes.Save(fs);
+                }
+                sw.Stop();
+                LogHelper.NewLog(string.Format("StbPerf: savetest strokes={0} bytes={1} ms={2} path='{3}'",
+                    inkCanvas.Strokes.Count, new FileInfo(outPath).Length, sw.ElapsedMilliseconds, outPath));
+            }
+            catch (Exception ex)
+            {
+                LogHelper.NewLog("StbPerf: savetest failed " + ex.Message);
+            }
+        }
+
         private void StbLoadInkFile(string path, bool isStartup)
         {
-            if (_stbPerfLoadingInk)
-            {
-                return;
-            }
+            if (_stbPerfLoadingInk) { return; }
             _stbPerfLoadingInk = true;
             Stopwatch totalWatch = Stopwatch.StartNew();
-            long parseMs = 0;
-            long applyMs = 0;
-            long hookMs = 0;
-            long clearMs = 0;
-            long bytes = 0;
+            long parseMs = 0, applyMs = 0, hookMs = 0, clearMs = 0, bytes = 0;
             int total = 0;
             int oldCount = inkCanvas.Strokes.Count;
 
@@ -157,26 +175,18 @@ namespace InkCanvasPlus
                 parseMs = phase.ElapsedMilliseconds;
                 total = loaded == null ? 0 : loaded.Count;
 
-                // 整份赋值：WPF 只建一次视觉树；逐块 Add 每块都会全量重绘，实测更慢。
                 StbPerfShowBusy(string.Format("正在应用墨迹… {0} 笔（原有 {1} 笔）", total, oldCount));
                 StbPerfPump();
 
-                // 先摘掉旧集合的处理器；随后为加载进来的每笔补订阅（不克隆点集）。
                 inkCanvas.Strokes.StrokesChanged -= StrokesOnStrokesChanged;
                 handlerDetached = true;
                 StrokeInitialHistory.Clear();
                 DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
-                foreach (KeyValuePair<Guid, List<Stroke>> pair in DrawingAttributesHistoryFlag)
-                {
-                    pair.Value.Clear();
-                }
+                foreach (KeyValuePair<Guid, List<Stroke>> pair in DrawingAttributesHistoryFlag) { pair.Value.Clear(); }
                 phase.Restart();
                 if (loaded != null)
                 {
-                    foreach (Stroke stroke in loaded)
-                    {
-                        StbPerfHookStroke(stroke, this);
-                    }
+                    foreach (Stroke stroke in loaded) { StbPerfHookStroke(stroke, this); }
                 }
                 hookMs = phase.ElapsedMilliseconds;
 
@@ -188,13 +198,12 @@ namespace InkCanvasPlus
                 handlerDetached = false;
                 timeMachine.ClearStrokeHistory();
 
+                if (StbPerfHasArg("-savetest")) { StbPerfSaveTest(path); }
+
                 long totalMs = totalWatch.ElapsedMilliseconds;
                 string message = string.Format("笔记已加载：{0} 笔，{1:0.0} MB，用时 {2:0.0} 秒", total, bytes / 1048576.0, totalMs / 1000.0);
                 StbPerfHideBusy();
-                if (!isStartup)
-                {
-                    ShowNotification(message);
-                }
+                if (!isStartup) { ShowNotification(message); }
                 LogHelper.NewLog(string.Format("StbPerf: load '{0}' strokes={1} bytes={2} parseMs={3} hookMs={4} clearMs={5} addMs={6} totalMs={7} old={8}", path, total, bytes, parseMs, hookMs, clearMs, applyMs, totalMs, oldCount));
             }
             catch (Exception ex)
@@ -205,10 +214,7 @@ namespace InkCanvasPlus
             }
             finally
             {
-                if (handlerDetached)
-                {
-                    inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged;
-                }
+                if (handlerDetached) { inkCanvas.Strokes.StrokesChanged += StrokesOnStrokesChanged; }
                 inkCanvas.IsHitTestVisible = previousHitTest;
                 Mouse.OverrideCursor = previousCursor;
                 _stbPerfLoadingInk = false;
