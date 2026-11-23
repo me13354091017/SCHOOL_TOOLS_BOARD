@@ -1,8 +1,8 @@
 # apply-stb-fix43.ps1
-# 1.0.1.54：10MB+ 大笔记流畅化。
+# 1.0.1.55：10MB+ 大笔记流畅化。
 #   真机基线（34,000 笔 / 10.7MB）：解析 1.5s、Clear 15s、Add 6s，原流程 UI 冻结约 20s。
 #   改为：整份 StrokeCollection 赋值 + 64 位进程 + 进度遮罩；加载时跳过 34k 笔的 StylusPoints 克隆，只补事件订阅。
-#   另支持 -icstk <路径> 启动参数（真机基线/双击打开用），保存时释放文件句柄并记录耗时。
+#   64 位下捕获 IAWinFX 预加载的 BadImageFormatException，避免 Window_Loaded 中断。
 param([string]$Root = "plus-src", [string]$Version = "1.0.0.0")
 
 $ErrorActionPreference = 'Stop'
@@ -48,12 +48,27 @@ $old = @'
 $new = @'
             UpdateWindowTitle();
 
-            // 1.0.1.54：窗口首帧后处理 -icstk 启动参数 / 大笔记加载
+            // 1.0.1.55：窗口首帧后处理 -icstk 启动参数 / 大笔记加载
             Loaded += StbPerfOnLoaded;
 
             CheckVersionAndShowWelcome();
 '@
 $t = ReplaceOnce $t $old $new 'loaded hook'
+
+# ---------- P2b 64 位下跳过 IAWinFX 预加载（原生库只有 x86）----------
+$old = @'
+            PreloadIALibrary();
+
+            ApplyMarkerMode();
+'@
+$new = @'
+            // 1.0.1.55：IAWinFX 是 32 位原生库，64 位进程会 BadImageFormatException；捕获后继续，64 位下仅手写识别不可用
+            try { PreloadIALibrary(); }
+            catch (Exception stbIaEx) { LogHelper.NewLog("StbPerf: IAWinFX preload skipped: " + stbIaEx.GetType().Name); }
+
+            ApplyMarkerMode();
+'@
+$t = ReplaceOnce $t $old $new 'ia preload guard'
 WriteText $mw $t
 
 # ---------- P3 打开笔记走渐进加载 ----------
@@ -87,7 +102,7 @@ $old = @'
                     }
 '@
 $new = @'
-                    // 1.0.1.54：大笔记改为整份赋值，避免逐块重绘
+                    // 1.0.1.55：大笔记改为整份赋值，避免逐块重绘
                     StbLoadInkFile(openFileDialog.FileName, false);
 '@
 $t = ReplaceOnce $t $old $new 'open progressive'
@@ -106,7 +121,7 @@ $new = @'
                 }
                 finally
                 {
-                    // 1.0.1.54：原实现不释放 FileStream，10MB+ 文件会长期被锁
+                    // 1.0.1.55：原实现不释放 FileStream，10MB+ 文件会长期被锁
                     string stbSavePath = fs.Name;
                     fs.Dispose();
                     LogHelper.NewLog(string.Format("StbPerf: save strokes={0} bytes={1} ms={2} path='{3}'",
@@ -123,6 +138,7 @@ Assert ($perf.Contains('private void StbPerfPump()')) 'perf pump'
 Assert ($perf.Contains('StbPerfHookStroke')) 'perf hook stroke'
 Assert ($perf.Contains('-icstk=')) 'perf startup arg'
 Assert ((ReadText $mw).Contains('Loaded += StbPerfOnLoaded;')) 'loaded hook assert'
+Assert ((ReadText $mw).Contains('IAWinFX preload skipped')) 'ia guard assert'
 Assert ((ReadText $feat).Contains('StbLoadInkFile(openFileDialog.FileName, false);')) 'open assert'
 Assert ((ReadText $feat).Contains('fs.Dispose();')) 'save assert'
 Assert ((ReadText $proj).Contains('<Prefer32Bit>False</Prefer32Bit>')) 'prefer32bit assert'
