@@ -1,5 +1,5 @@
 # apply-stb-fix43.ps1
-# 1.0.1.53：10MB+ 大笔记流畅化。
+# 1.0.1.54：10MB+ 大笔记流畅化。
 #   真机基线（34,000 笔 / 10.7MB）：解析 1.5s、Clear 15s、Add 6s，原流程 UI 冻结约 20s。
 #   改为：整份 StrokeCollection 赋值 + 64 位进程 + 进度遮罩；加载时跳过 34k 笔的 StylusPoints 克隆，只补事件订阅。
 #   另支持 -icstk <路径> 启动参数（真机基线/双击打开用），保存时释放文件句柄并记录耗时。
@@ -31,6 +31,9 @@ $t = ReadText $proj
 $old = '<TargetFramework>net472</TargetFramework>'
 $new = $old + "`r`n`t`t<Prefer32Bit>false</Prefer32Bit>"
 $t = ReplaceOnce $t $old $new 'prefer32bit off'
+# 上游在 Release|AnyCPU 配置里又写死了 Prefer32Bit=True，必须一并改掉，否则前面的设置会被覆盖
+Assert ($t.Contains('<Prefer32Bit>True</Prefer32Bit>')) 'upstream Prefer32Bit=True not found'
+$t = $t.Replace('<Prefer32Bit>True</Prefer32Bit>', '<Prefer32Bit>False</Prefer32Bit>')
 WriteText $proj $t
 Write-Host 'PATCHED Prefer32Bit=false'
 
@@ -45,7 +48,7 @@ $old = @'
 $new = @'
             UpdateWindowTitle();
 
-            // 1.0.1.53：窗口首帧后处理 -icstk 启动参数 / 大笔记加载
+            // 1.0.1.54：窗口首帧后处理 -icstk 启动参数 / 大笔记加载
             Loaded += StbPerfOnLoaded;
 
             CheckVersionAndShowWelcome();
@@ -84,7 +87,7 @@ $old = @'
                     }
 '@
 $new = @'
-                    // 1.0.1.53：大笔记改为整份赋值，避免逐块重绘
+                    // 1.0.1.54：大笔记改为整份赋值，避免逐块重绘
                     StbLoadInkFile(openFileDialog.FileName, false);
 '@
 $t = ReplaceOnce $t $old $new 'open progressive'
@@ -103,7 +106,7 @@ $new = @'
                 }
                 finally
                 {
-                    // 1.0.1.53：原实现不释放 FileStream，10MB+ 文件会长期被锁
+                    // 1.0.1.54：原实现不释放 FileStream，10MB+ 文件会长期被锁
                     string stbSavePath = fs.Name;
                     fs.Dispose();
                     LogHelper.NewLog(string.Format("StbPerf: save strokes={0} bytes={1} ms={2} path='{3}'",
@@ -122,5 +125,6 @@ Assert ($perf.Contains('-icstk=')) 'perf startup arg'
 Assert ((ReadText $mw).Contains('Loaded += StbPerfOnLoaded;')) 'loaded hook assert'
 Assert ((ReadText $feat).Contains('StbLoadInkFile(openFileDialog.FileName, false);')) 'open assert'
 Assert ((ReadText $feat).Contains('fs.Dispose();')) 'save assert'
-Assert ((ReadText $proj).Contains('<Prefer32Bit>false</Prefer32Bit>')) 'prefer32bit assert'
+Assert ((ReadText $proj).Contains('<Prefer32Bit>False</Prefer32Bit>')) 'prefer32bit assert'
+Assert (-not (ReadText $proj).Contains('<Prefer32Bit>True</Prefer32Bit>')) 'no prefer32bit true'
 Write-Host 'OK fix43 verified'
