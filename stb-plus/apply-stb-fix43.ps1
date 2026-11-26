@@ -8,7 +8,18 @@ try {
     $url = (Get-Content -LiteralPath $urlFile -Raw).Trim()
     if (-not $url) { throw 'empty fix44-assets.url' }
     $zip = Join-Path $env:RUNNER_TEMP 'stb-fix43-fix44-assets.zip'
-    Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $url -OutFile $zip
+    Write-Host ("DOWNLOAD assets: " + $url)
+    $ok = $false
+    if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+        & curl.exe -L --fail --max-time 60 --retry 2 --retry-delay 3 -o $zip $url
+        if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $zip)) { $ok = $true }
+    }
+    if (-not $ok) {
+        Invoke-WebRequest -UseBasicParsing -MaximumRedirection 5 -Uri $url -OutFile $zip -TimeoutSec 90
+        $ok = $true
+    }
+    if (-not $ok -or -not (Test-Path -LiteralPath $zip)) { throw 'asset download failed' }
+    Write-Host ("DOWNLOAD done: " + (Get-Item -LiteralPath $zip).Length + " bytes")
     $repoRoot = Split-Path -Parent $PSScriptRoot
     Expand-Archive -LiteralPath $zip -DestinationPath $repoRoot -Force
     $core = Join-Path $PSScriptRoot 'apply-stb-fix43-core.ps1'
