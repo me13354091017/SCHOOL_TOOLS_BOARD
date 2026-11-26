@@ -1,15 +1,16 @@
-# SchoolToolsBoard 1.0.2.6「浮窗拖动收尾」
+# SchoolToolsBoard 1.0.2.7「浮窗拖动不消失」
 
 ## 本次修复
 
-- 修复“点开浮窗时拖动浮动栏崩溃/卡死”：1.0.2.5 在 Popup 或浮动栏编辑窗打开时拖动笑脸，`MouseUp` 可能被浮窗吃掉，透明拖拽遮罩留在最上层，表现为点哪里都没反应、像崩溃。1.0.2.6 增加 40ms `DispatcherTimer` 看门狗，直接查 Win32 左键状态，物理鼠标一松就强制 `StbEndFloatBarDrag` 收起遮罩。
-- 保留拖动捕获鼠标、`LostMouseCapture`、窗口失焦三重收尾；拖动后不会误弹笑脸菜单。
-- 补全异常日志：`LogHelper.NewLog(Exception)` 不再是空实现，异常会写入 `Log.txt`；同时记录 AppDomain 与 TaskScheduler 未处理异常，下次异常可直接查栈。
-- 保留 1.0.2.5 的 NaN/Infinity 坐标校验、3 像素拖动阈值与笑脸菜单延迟弹出。
+- 修复“点开笑脸菜单不关，拖动主界面浮动栏后浮动栏消失、进程还在”：1.0.2.6 仍用 `e.GetPosition(null)` 取拖动坐标，笑脸 Popup 打开时 PresentationSource 可能变成 Popup，`MouseMove` 坐标从主窗坐标跳成 Popup 坐标，浮动栏被算到屏幕外。1.0.2.7 改用 Win32 `GetCursorPos` + `MainWindow.PointFromScreen`，每次都用同一套主窗 DIP 坐标。
+- 拖动位移改为“当前鼠标位置 - 按下时位置”，不再逐帧累计，避免丢帧或坐标跳变被放大。
+- 每次移动与松手都把浮动栏夹在主窗可见范围内；即使之前已经把浮动栏跑到屏幕外，1.0.2.7 收尾时也会拉回来。
+- 保留 1.0.2.6 的 40ms 鼠标左键状态看门狗，Popup/浮窗吃掉 `MouseUp` 时也会强制 `StbEndFloatBarDrag`。
+- 补全异常日志：`LogHelper.NewLog(Exception)` 会把异常写入 `Logs` 日志。
 
 ## 保留
 
 - 左键单击笑脸打开应用菜单：组件编辑、设置、保存、另存到、打开、重启、退出；右键不弹菜单。
-- 按住笑脸拖动仍可移动浮动栏。
+- 按住笑脸拖动仍可移动浮动栏，拖动结束不会误弹菜单。
 - 板中板底栏三个按钮、24 色墨迹、12 套主题、颜色主题下拉框、快捷设置右缘修正、滚动条隐藏、Fluent 图标、PPT / WPS 退出恢复。
 - 64 位优先 + 整份墨迹赋值 + 加载遮罩：10.7MB / 3.4 万笔笔记加载约 9.6 秒。
